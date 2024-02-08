@@ -11,8 +11,8 @@
 # /!\ Attention, "multithread" fait reference a l'hyperthreading dans la terminologie Slurm
 #SBATCH --hint=nomultithread         # hyperthreading desactive
 #SBATCH --time=00:20:00              # temps d'execution maximum demande (HH:MM:SS)
-#SBATCH --output=%x_%A_%a_%j.out  # nom du fichier de sortie
-#SBATCH --error=%x_%A_%a_%j.err   # nom du fichier d'erreur (ici commun avec la sortie)
+#SBATCH --output=%x_%A_%a.out  # nom du fichier de sortie
+#SBATCH --error=%x_%A_%a.err   # nom du fichier d'erreur (ici commun avec la sortie)
 #SBATCH -A ynx@v100                   # specify the project
 #SBATCH --qos=qos_gpu-dev            # using the dev queue, as this is only for profiling
 ##SBATCH --array=0-4
@@ -20,7 +20,7 @@
 # echo des commandes lancees
 set -x
 
-cd $WORK/projects/submission-scripts/jean_jay/env_configs/
+cd $WORK/projects/submission-scripts/jean_zay/env_configs/
 
 . diffnest.sh
 

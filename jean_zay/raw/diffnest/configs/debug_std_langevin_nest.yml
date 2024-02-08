@@ -3,8 +3,8 @@
 save_dir: /gpfsscratch/rech/ynx/ulx23va/projects/projects-ns/debug/
 input_data_dir: /gpfswork/rech/ynx/ulx23va/projects/projects-ns/proxnest_diff/data/
 # Experiment name
-experiment: Langevin_NS_denoisin_64_
-run_name: denoising_long_run_1_warm_5_
+experiment: debug_langevin_NS_64_
+run_name: denoising_1_
 
 
 # ----- #

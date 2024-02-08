@@ -13,10 +13,12 @@ wandb_vis: True
 wandb_vis_imgs: True
 wandb_vis_imgs_freq: 5
 wandb_log_evidence_freq: 5
+wandb_dir: /gpfsscratch/rech/ynx/ulx23va/wandb/
 # wandb_vis: (bool) Use wandb visualisation logger
 # wandb_vis_imgs: (bool) Use wandb to visualise imgs
 # wandb_vis_imgs_freq: (int) Frequency to upload img to wandb
 # wandb_log_evidence_freq: (int) Frequency to compute evidence and log it to wandb
+# wandb_dir: (str) Path to the directory where wandb data will be stored. Use ./wandb/
 
 
 # ----- #

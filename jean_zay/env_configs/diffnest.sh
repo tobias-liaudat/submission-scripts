@@ -2,4 +2,3 @@
 module purge
 module load pytorch-gpu/py3/2.1.1
 
-WANDB_MODE=offline

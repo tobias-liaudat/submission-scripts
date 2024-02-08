@@ -9,7 +9,7 @@ run_name: denoising_1_
 
 # ----- #
 # Logging
-wandb_vis: False
+wandb_vis: True
 wandb_vis_imgs: True
 wandb_vis_imgs_freq: 5
 wandb_log_evidence_freq: 5

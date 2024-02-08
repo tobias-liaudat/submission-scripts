@@ -17,15 +17,15 @@
 #SBATCH --qos=qos_gpu-dev            # using the dev queue, as this is only for profiling
 ##SBATCH --array=0-4
 
-# echo des commandes lancees
-set -x
-
 cd $WORK/projects/submission-scripts/jean_zay/env_configs/
 
 . diffnest.sh
+
+# echo des commandes lancees
+set -x
 
 cd $WORK/projects/projects-ns/proxnest_diff/ProxNest
 
 srun python -u ./run_nested_sampling.py \
     --slurm True \
-    --config $WORK/projects/submission-scripts/jean_jay/raw/diffnest/configs/deubg_std_langevin_nest.yml
+    --config $WORK/projects/submission-scripts/jean_zay/raw/diffnest/configs/debug_std_langevin_nest.yml

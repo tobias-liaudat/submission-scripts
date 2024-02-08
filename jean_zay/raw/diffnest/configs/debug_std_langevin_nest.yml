@@ -1,7 +1,7 @@
 # ----- #
 # Define paths
-save_dir: $SCRATCH/projects/projects-ns/debug/
-input_data_dir: $WORK/projects/projects-ns/proxnest_diff/data/
+save_dir: /gpfsscratch/rech/ynx/ulx23va/projects/projects-ns/debug/
+input_data_dir: /gpfswork/rech/ynx/ulx23va/projects/projects-ns/proxnest_diff/data/
 # Experiment name
 experiment: Langevin_NS_denoisin_64_
 run_name: denoising_long_run_1_warm_5_
@@ -78,7 +78,7 @@ lv_delta: 1e-7
 lv_lamb: 5e-7
 lv_alpha: 2e-4
 denoiser_type: dncnn
-denoiser_model_path: $WORK/projects/projects-ns/myDenoisers/trained_models/DnCNN/BSD/DnCNN_BSD_full_train_checkpoint_epoch_100.pth
+denoiser_model_path: /gpfswork/rech/ynx/ulx23va/projects/projects-ns/myDenoisers/trained_models/DnCNN/BSD/DnCNN_BSD_full_train_checkpoint_epoch_100.pth
 wav_levels: 4
 wav_dict_list:
   - db6

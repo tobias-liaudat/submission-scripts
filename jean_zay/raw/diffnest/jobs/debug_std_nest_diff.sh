@@ -28,4 +28,4 @@ cd $WORK/projects/projects-ns/proxnest_diff/ProxNest
 
 srun python -u ./run_nested_sampling.py \
     --slurm True \
-    --config $WORK/projects/submission-scripts/jean_zay/raw/diffnest/configs/debug_std_langevin_nest.yml
+    --config $WORK/projects/submission-scripts/jean_zay/raw/diffnest/configs/debug_std_nest_diff.yml

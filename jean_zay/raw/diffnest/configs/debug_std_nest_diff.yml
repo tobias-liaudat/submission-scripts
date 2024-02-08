@@ -4,7 +4,7 @@ save_dir: /gpfsscratch/rech/ynx/ulx23va/projects/projects-ns/debug/
 input_data_dir: /gpfswork/rech/ynx/ulx23va/projects/projects-ns/proxnest_diff/data/
 # Experiment name
 experiment: debug_diffnest_NS_64_
-run_name: denoising_wav_1_
+run_name: denoising_run_1_
 
 
 # ----- #

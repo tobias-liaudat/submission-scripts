@@ -99,6 +99,7 @@ wav_reg_param: 2e4
 # ----- #
 # Diffusion params
 model_type: imagenet
+diff_model_path: /gpfswork/rech/ynx/ulx23va/projects/projects-ns/pretrained_models/256x256_diffusion_uncond.pt
 in_channels: 3
 out_channels: 3
 diffusion_steps: 100

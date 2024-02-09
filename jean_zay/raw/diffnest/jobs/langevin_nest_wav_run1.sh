@@ -13,7 +13,7 @@
 #SBATCH --time=100:00:00              # temps d'execution maximum demande (HH:MM:SS)
 #SBATCH --output=R-%x_%A_%a.out  # nom du fichier de sortie
 #SBATCH --error=R-%x_%A_%a.err   # nom du fichier d'erreur (ici commun avec la sortie)
-#SBATCH -A ynx@gpu                   # specify the project
+#SBATCH -A ynx@v100                   # specify the project
 ##SBATCH --qos=qos_gpu-dev            # using the dev queue, as this is only for profiling
 #SBATCH --qos=qos_gpu-t4              # Long queue
 #SBATCH --array=0-6

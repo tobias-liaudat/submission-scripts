@@ -11,7 +11,7 @@ run_name: denoising_wav_1_reg_2e4_samples_1e4_1e5_warm_coeff_10_
 # Logging
 wandb_vis: True
 wandb_vis_imgs: True
-wandb_vis_imgs_freq: 5
+wandb_vis_imgs_freq: 10
 wandb_log_evidence_freq: 5
 wandb_dir: /gpfsscratch/rech/ynx/ulx23va/wandb/
 # wandb_vis: (bool) Use wandb visualisation logger

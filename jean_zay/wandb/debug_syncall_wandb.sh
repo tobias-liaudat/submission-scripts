@@ -9,7 +9,7 @@ offline_runs="$1/offline-run*"
 
 for ofrun in $offline_runs
 do
-        echo $ofrun;
+        wandb sync $ofrun;
         sleep 1s;
 done
 

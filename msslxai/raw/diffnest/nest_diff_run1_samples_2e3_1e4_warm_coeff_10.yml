@@ -1,0 +1,132 @@
+# ----- #
+# Define paths
+save_dir: /disk/xray0/tl3/project-nested-diffusion/proxnest/dev/tmp_storage/
+input_data_dir: /disk/xray0/tl3/project-nested-diffusion/proxnest/data/
+# Experiment name
+experiment: nestdiff_NS_256
+run_name: denoising_nestdiff_1_samples_2e3_1e4_warm_coeff_10_
+
+
+# ----- #
+# Logging
+wandb_vis: True
+wandb_vis_imgs: True
+wandb_vis_imgs_freq: 5
+wandb_log_evidence_freq: 5
+wandb_dir: /disk/xray0/tl3/wandb_data/
+# wandb_vis: (bool) Use wandb visualisation logger
+# wandb_vis_imgs: (bool) Use wandb to visualise imgs
+# wandb_vis_imgs_freq: (int) Frequency to upload img to wandb
+# wandb_log_evidence_freq: (int) Frequency to compute evidence and log it to wandb
+# wandb_dir: (str) Path to the directory where wandb data will be stored. Use ./wandb/
+
+
+# ----- #
+# Data
+img_size: 256
+color_img: True
+sigma: None
+dtype: uint
+# dtype can be uint (0 to 255) or float, and will afect the way sigma is interpreted
+ISNR: 15
+# img_size: (int) image size. Can be `64` or `256`.
+# color_img: (bool) Color image. If True, we use the RGB image, if False a monochromatic image.
+# sigma: (str) Pre-defined sigma for the noise generation. If `None`, the `ISNR` value is used to generate `sigma`.
+
+
+# ----- #
+# Inverse problem type
+inv_problem: denoising
+# Inverse problem params
+blur_kernel_size: 5
+# inv_problem: (str) Inverse problem type. Options are `denoising` and `blur`
+# blur_kernel_size: (int) Blur kernel size for the `blur` inverse problem
+
+
+# ----- #
+# L2 ball projection algorithm options
+l2_proj_method: deepinv
+max_iter: 200
+tol: 1e-8
+optim_verbose: False
+# l2_proj_method: (str) projection methods are 'deepinv' and 'sopt'
+# max_iter: (int) Maximum number of iterations (L2 Ball projection alg)
+# tol: (float) Convergence tolerance of algorithm (L2 Ball projection alg)
+# optim_verbose: (bool) L2 ball projection ptimisation verbosity
+
+
+# ----- #
+# options - Nested sampling alg
+ns_type: diffusion
+samplesL: 2e3
+samplesD: 1e4
+warm_start: True
+warm_start_coeff: 10
+verbose: True
+# ns_type: (str) Type of nested sampling algorithm. Can be `langevin` or `diffusion`
+# samplesL: (int) Number of live samples
+# samplesD: (int) Number of discarded samples 
+# warm_start: (bool) warm start the algorithm by setting a minimum likelihood value from where to sample
+# warm_start_coeff: (int) Coefficient $a$ to compute the minimum likelihood to use for the warm start.
+#   It is computed as $a*L(x^{hat})$, where $x^{hat}$ is the pseudo inverse of the inverse problem 
+#   and $L(.)$ is the likelihood function.
+# verbose: (bool) Verbosity
+
+# ----- #
+# Langevin nested sampling params / Only used if `ns_type: langevin`
+lv_thinning_init: 1e1
+lv_thinning: 1e1
+lv_burn: 1e3
+lv_delta: 1e-7
+lv_lamb: 5e-7
+lv_alpha: 2e-4
+denoiser_type: dncnn
+denoiser_model_path: /disk/xray0/tl3/project-nested-diffusion/myDenoisers/trained_models/DnCNN/BSD/DnCNN_BSD_full_train_checkpoint_epoch_100.pth
+wav_levels: 4
+wav_dict_list:
+  - db6
+  - db8
+wav_reg_param: 2e4
+# lv_thinning_init: (int) Sampling thinning factor for the initial live samples 
+# lv_thinning: (int) Sampling thinning factor for the sample evolution
+# lv_burn: (int) Burn in samples
+# lv_delta: (float) Langevin discretisation step-size (Required parameter)
+# lv_lamb: (float) Moreau approximation parameter (If left to None, it will be set by default)
+# lv_alpha: (float) Prior prox parameter (Required parameter). It should be in around the order of the step size parameter (+/- one order of magnitude). The gamma parameter will be set as `alpha * sigma_noise**2`.
+# denoiser_type: (str) Denoising type. It can be `wavelets` or `dncnn`. If the denoiser is learned, the path to the saved weigths should be in `denoiser_model_path`.
+# denoiser_model_path: (str) Path to the trained denoiser to be used as a prox.
+# wav_levels: (int) number of wavelet decomposition level
+# wav_dict_list: (str) wavelet dictionary. Select which wavelets should be used. The format follows the pywavelets package.
+# wav_reg_param: (float) wavelet regularisation parameter. Similar to `lv_alpha` for the learned denoisers
+
+
+# ----- #
+# Diffusion params / Only used if `ns_type: diffusion`
+model_type: imagenet
+diff_model_path: /disk/xray99/tl3/pretrained_diffusions/diffpir_pretrained_models/256x256_diffusion_uncond.pt
+in_channels: 3
+out_channels: 3
+diffusion_steps: 100
+lambda_: 7.0
+zeta: 0.3
+noise_init: True
+reflection: True
+reflection_strategy: 1
+reflection_pos: beginning
+# model_type: (str) Type of pretrained model. Options are 'imagenet' or 'ffhq'
+# diff_model_path: (str) Path to the pretrained diffusion model 
+# in_channels: (int) Channels in the input Tensor.
+# out_channels: (int) Channels in the output Tensor.
+# diffusion_steps: (int) Maximum number of iterations of the DiffPIR algorithm
+# lambda_: (float) Regularisation parameter
+# zeta: (float) DiffPIR parameter controling the diffusion
+# reflection: (bool) Boolean, True to use reflections, False not to use them. The other 
+#   reflection parameters are ignored if in False.
+# reflection_strategy: (int) `1` is using the prox projection to reflect, 
+#   `2` reflects using the boundary's normal at the intersection, 
+#   if `3` the reflection is done using the boundary's normal but 
+#   from the point outside the boundary without computing the 
+#   intersection with the boundary. 
+# reflection_pos: (str) Position to reflect. If "beggining", it is applied to x0  
+#   after the score is computed. If "end", it is applied at the last line  
+#   of the reverse diffusion step. 

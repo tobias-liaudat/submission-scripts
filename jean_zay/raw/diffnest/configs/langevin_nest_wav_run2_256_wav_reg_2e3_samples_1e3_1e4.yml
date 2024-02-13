@@ -4,7 +4,7 @@ save_dir: /gpfsscratch/rech/ynx/ulx23va/projects/projects-ns/debug/
 input_data_dir: /gpfswork/rech/ynx/ulx23va/projects/projects-ns/proxnest_diff/data/
 # Experiment name
 experiment: langevin_NS_wav_256
-run_name: denoising_wav_2_reg_2e4_samples_1e4_1e5_
+run_name: denoising_wav_2_reg_2e3_samples_1e3_1e4_
 
 
 # ----- #
@@ -58,8 +58,8 @@ optim_verbose: False
 # ----- #
 # options - Nested sampling alg
 ns_type: langevin
-samplesL: 1e4
-samplesD: 1e5
+samplesL: 1e3
+samplesD: 1e4
 warm_start: True
 warm_start_coeff: 10
 verbose: True
@@ -86,7 +86,7 @@ wav_levels: 4
 wav_dict_list:
   - db6
   - db8
-wav_reg_param: 2e4
+wav_reg_param: 2e3
 # lv_thinning_init: (int) Sampling thinning factor for the initial live samples 
 # lv_thinning: (int) Sampling thinning factor for the sample evolution
 # lv_burn: (int) Burn in samples

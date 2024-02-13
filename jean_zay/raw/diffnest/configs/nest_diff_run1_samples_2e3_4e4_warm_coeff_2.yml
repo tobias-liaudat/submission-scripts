@@ -4,7 +4,7 @@ save_dir: /gpfsscratch/rech/ynx/ulx23va/projects/projects-ns/debug/
 input_data_dir: /gpfswork/rech/ynx/ulx23va/projects/projects-ns/proxnest_diff/data/
 # Experiment name
 experiment: nestdiff_NS_256
-run_name: denoising_nestdiff_1_samples_2e3_1e4_warm_coeff_5_
+run_name: denoising_nestdiff_1_samples_2e3_4e4_warm_coeff_2_
 
 
 # ----- #
@@ -59,9 +59,9 @@ optim_verbose: False
 # options - Nested sampling alg
 ns_type: diffusion
 samplesL: 2e3
-samplesD: 1e4
+samplesD: 4e4
 warm_start: True
-warm_start_coeff: 5
+warm_start_coeff: 2
 verbose: True
 # ns_type: (str) Type of nested sampling algorithm. Can be `langevin` or `diffusion`
 # samplesL: (int) Number of live samples
@@ -71,7 +71,6 @@ verbose: True
 #   It is computed as $a*L(x^{hat})$, where $x^{hat}$ is the pseudo inverse of the inverse problem 
 #   and $L(.)$ is the likelihood function.
 # verbose: (bool) Verbosity
-
 
 # ----- #
 # Langevin nested sampling params / Only used if `ns_type: langevin`

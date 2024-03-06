@@ -19,7 +19,7 @@
 
 # Load env
 cd $WORK/projects/submission-scripts/jean_zay/env_configs/
-. wfv2.sh
+. wfv1.sh
 
 # echo des commandes lancees
 set -x

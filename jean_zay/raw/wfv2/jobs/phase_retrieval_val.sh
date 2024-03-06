@@ -25,10 +25,10 @@ cd $WORK/projects/submission-scripts/jean_zay/env_configs/
 # echo des commandes lancees
 set -x
 
-opt[0]=" -c /gpfswork/rech/ynx/ulx23va/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v0.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2/PR_validation"
-opt[1]=" -c /gpfswork/rech/ynx/ulx23va/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v1.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2/PR_validation"
-opt[2]=" -c /gpfswork/rech/ynx/ulx23va/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v2.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2/PR_validation"
-opt[3]=" -c /gpfswork/rech/ynx/ulx23va/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v3.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2/PR_validation"
+opt[0]=" -c /gpfswork/rech/ynx/ulx23va/projects/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v0.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2/PR_validation"
+opt[1]=" -c /gpfswork/rech/ynx/ulx23va/projects/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v1.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2/PR_validation"
+opt[2]=" -c /gpfswork/rech/ynx/ulx23va/projects/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v2.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2/PR_validation"
+opt[3]=" -c /gpfswork/rech/ynx/ulx23va/projects/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v3.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2/PR_validation"
 
 
 wavediff ${opt[$SLURM_ARRAY_TASK_ID]}

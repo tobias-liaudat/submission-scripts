@@ -13,7 +13,7 @@
 #SBATCH --error=PR_val_wfv2_test_n1_%j.err   # nom du fichier d'erreur (ici commun avec la sortie)
 #SBATCH --mail-use=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
-#SBATCH -A ynx@gpu                   # specify the project
+#SBATCH -A ynx@v100                   # specify the project
 #SBATCH --qos=qos_gpu-dev            # using the dev queue, as this is only for profiling
 #SBATCH --array=0-3
 

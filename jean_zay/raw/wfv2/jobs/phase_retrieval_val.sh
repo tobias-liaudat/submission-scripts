@@ -8,13 +8,13 @@
 #SBATCH -C v100-32g 
 # /!\ Attention, "multithread" fait reference a l'hyperthreading dans la terminologie Slurm
 #SBATCH --hint=nomultithread         # hyperthreading desactive
-#SBATCH --time=20:00:00              # temps d'execution maximum demande (HH:MM:SS)
+#SBATCH --time=00:10:00              # temps d'execution maximum demande (HH:MM:SS)
 #SBATCH --output=PR_val_wfv2_test_n1_%j.out  # nom du fichier de sortie
 #SBATCH --error=PR_val_wfv2_test_n1_%j.err   # nom du fichier d'erreur (ici commun avec la sortie)
 #SBATCH --mail-use=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
 #SBATCH -A ynx@gpu                   # specify the project
-##SBATCH --qos=qos_gpu-dev            # using the dev queue, as this is only for profiling
+#SBATCH --qos=qos_gpu-dev            # using the dev queue, as this is only for profiling
 #SBATCH --array=0-3
 
 # Load env

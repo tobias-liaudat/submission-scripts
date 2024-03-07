@@ -8,13 +8,13 @@
 #SBATCH -C v100-32g 
 # /!\ Attention, "multithread" fait reference a l'hyperthreading dans la terminologie Slurm
 #SBATCH --hint=nomultithread         # hyperthreading desactive
-#SBATCH --time=20:00:00              # temps d'execution maximum demande (HH:MM:SS)
+#SBATCH --time=00:20:00              # temps d'execution maximum demande (HH:MM:SS)
 #SBATCH --output=PR_validation_wfv1_test_n1_%j.out  # nom du fichier de sortie
 #SBATCH --error=PR_validation_wfv1_test_n1_%j.err   # nom du fichier d'erreur (ici commun avec la sortie)
 #SBATCH --mail-use=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
 #SBATCH -A ynx@v100                   # specify the project
-##SBATCH --qos=qos_gpu-dev            # using the dev queue, as this is only for profiling
+#SBATCH --qos=qos_gpu-dev            # using the dev queue, as this is only for profiling
 #SBATCH --array=0-3
 
 # Load env
@@ -60,7 +60,7 @@ srun python -u ./train_eval_plot_script_click_multi_cycle.py \
     --l2_param 0. \
     --interpolation_type none \
     --eval_batch_size 16 \
-    --train_opt False \
+    --train_opt True \
     --eval_opt True \
     --plot_opt True \
     --dataset_folder /gpfswork/rech/ynx/ulx23va/wfv2/dataset_pr/data/ \

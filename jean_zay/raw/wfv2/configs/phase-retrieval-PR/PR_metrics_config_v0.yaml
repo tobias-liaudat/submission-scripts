@@ -64,7 +64,7 @@ metrics:
       # Hyperparameters for Parametric model 
       param_hparams:
         # Random seed for Tensor Flow Initialization
-        random_seed: 1000
+        random_seed: 5000
         
         # Parameter for the l2 loss function for the Optical path differences (OPD)/WFE
         l2_param: 0.
@@ -90,10 +90,10 @@ metrics:
         l1_rate: 1.0e-8
 
         #Flag to enable Projected learning for DD_features to be used with `poly` or `semiparametric` model.
-        project_dd_features: False
+        project_dd_features: True
 
         #Flag to reset DD_features to be used with `poly` or `semiparametric` model
-        reset_dd_features: False
+        reset_dd_features: True
 
         #Flag to save optimisation history for non-parametric model
         save_optim_history_nonparam: True 
@@ -105,7 +105,7 @@ metrics:
     #Save RMS error for each super resolved PSF in the test dataset in addition to the mean across the FOV."
     #Flag to get Super-Resolution pixel PSF RMSE for each individual test star. 
     #If `True`, the relative pixel RMSE of each star is added to ther saving dictionary.
-    opt_stars_rel_pix_rmse: False
+    opt_stars_rel_pix_rmse: True
   
     ## Specific parameters
     # Parameter for the l2 loss of the OPD.

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=PR_val_wfv2_test_n1_    # nom du job
+#SBATCH --job-name=PR_val_wfv2_test_n2_    # nom du job
 ##SBATCH --partition=gpu_p2          # de-commente pour la partition gpu_p2
 #SBATCH --ntasks=1                   # nombre total de tache MPI (= nombre total de GPU)
 #SBATCH --ntasks-per-node=1          # nombre de tache MPI par noeud (= nombre de GPU par noeud)
@@ -9,8 +9,8 @@
 # /!\ Attention, "multithread" fait reference a l'hyperthreading dans la terminologie Slurm
 #SBATCH --hint=nomultithread         # hyperthreading desactive
 #SBATCH --time=20:00:00              # temps d'execution maximum demande (HH:MM:SS)
-#SBATCH --output=PR_val_wfv2_test_n1_%j.out  # nom du fichier de sortie
-#SBATCH --error=PR_val_wfv2_test_n1_%j.err   # nom du fichier d'erreur (ici commun avec la sortie)
+#SBATCH --output=PR_val_wfv2_test_n2_%j.out  # nom du fichier de sortie
+#SBATCH --error=PR_val_wfv2_test_n2_%j.err   # nom du fichier d'erreur (ici commun avec la sortie)
 #SBATCH --mail-use=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
 #SBATCH -A ynx@v100                   # specify the project
@@ -25,10 +25,10 @@ cd $WORK/projects/submission-scripts/jean_zay/env_configs/
 # echo des commandes lancees
 set -x
 
-opt[0]=" -c /gpfswork/rech/ynx/ulx23va/projects/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v0.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2/PR_validation"
-opt[1]=" -c /gpfswork/rech/ynx/ulx23va/projects/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v1.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2/PR_validation"
-opt[2]=" -c /gpfswork/rech/ynx/ulx23va/projects/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v2.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2/PR_validation"
-opt[3]=" -c /gpfswork/rech/ynx/ulx23va/projects/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v3.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2/PR_validation"
+opt[0]=" -c /gpfswork/rech/ynx/ulx23va/projects/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v0.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2"
+opt[1]=" -c /gpfswork/rech/ynx/ulx23va/projects/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v1.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2"
+opt[2]=" -c /gpfswork/rech/ynx/ulx23va/projects/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v2.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2"
+opt[3]=" -c /gpfswork/rech/ynx/ulx23va/projects/submission-scripts/jean_zay/raw/wfv2/configs/phase-retrieval-PR/PR_configs_v3.yaml -r /gpfswork/rech/ynx/ulx23va/wfv2/repos/phase-retrieval-PR/wf-psf -o /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v2"
 
 
 wavediff ${opt[$SLURM_ARRAY_TASK_ID]}

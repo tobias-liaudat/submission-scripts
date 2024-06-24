@@ -46,10 +46,10 @@ srun python -u ./train_eval_plot_script_click_multi_cycle.py \
     --n_bins_gt 8 \
     --opt_stars_rel_pix_rmse True \
     --pupil_diameter 256 \
-    --n_epochs_param_multi_cycle 15 15 \
-    --n_epochs_non_param_multi_cycle 100 50 \
-    --l_rate_non_param_multi_cycle 0.1 0.06 \
-    --l_rate_param_multi_cycle 0.01 0.004 \
+    --n_epochs_param_multi_cycle "15 15" \
+    --n_epochs_non_param_multi_cycle "100 50" \
+    --l_rate_non_param_multi_cycle "0.1 0.06" \
+    --l_rate_param_multi_cycle "0.01 0.004" \
     --model poly \
     --model_eval poly \
     --cycle_def complete \

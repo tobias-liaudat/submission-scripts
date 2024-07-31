@@ -1,6 +1,6 @@
 # Define paths
 checkpoint_dir: /lustre/fswork/projects/rech/ynx/ulx23va/projects/projects-ns/trained_models/TNGgals/unet/
-dataset_path: /lustre/fswork/projects/rech/ynx/ulx23va/datasets/TNGgals
+dataset_path: /lustre/fswork/projects/rech/ynx/ulx23va/datasets/TNGgals/raw
 
 # Experiment name
 experiment: unet_TNGgals

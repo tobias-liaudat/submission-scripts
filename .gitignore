@@ -11,7 +11,7 @@ __pycache__/
 jean_zay/wandb/offline*
 jean_zay/wandb/wandb/*
 jean_zay/wandb/*.log
-jean_zay/wandb/latest-run/*
+jean_zay/wandb/latest-run
 
 # C extensions
 *.so

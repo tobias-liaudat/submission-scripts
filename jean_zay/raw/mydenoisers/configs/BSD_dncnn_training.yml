@@ -8,7 +8,7 @@ run_name: full_train_dncnn_BSD
 
 # Data
 dataset_name: BSD
-patch_size: 108
+patch_size: 180
 train_datapoints: 5e4
 eval_datapoints: 1e3
 test_datapoints: 0
@@ -32,6 +32,7 @@ num_workers: 4
 num_epochs: 100
 
 ckp_interval: 1
+eval_interval: 1
 
 # Optimizer
 learning_rate: 1e-4
@@ -44,6 +45,7 @@ loss:
 
 # Metrics
 metrics:
+  losses: True
   PSNR: True
   SSIM: True
   LPIPS: True

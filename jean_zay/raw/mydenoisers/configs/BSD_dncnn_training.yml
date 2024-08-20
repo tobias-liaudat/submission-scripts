@@ -8,7 +8,7 @@ run_name: full_train_dncnn_BSD
 
 # Data
 dataset_name: BSD
-patch_size: 108
+patch_size: 180
 train_datapoints: 5e4
 eval_datapoints: 1e3
 test_datapoints: 0

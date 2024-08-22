@@ -10,7 +10,7 @@
 #SBATCH -C v100-32g 
 # /!\ Attention, "multithread" fait reference a l'hyperthreading dans la terminologie Slurm
 #SBATCH --hint=nomultithread         # hyperthreading desactive
-#SBATCH --time=100:00:00              # temps d'execution maximum demande (HH:MM:SS)
+#SBATCH --time=99:59:00              # temps d'execution maximum demande (HH:MM:SS)
 #SBATCH --output=R-%x_%A_%a.out  # nom du fichier de sortie
 #SBATCH --error=R-%x_%A_%a.err   # nom du fichier d'erreur (ici commun avec la sortie)
 #SBATCH -A ynx@v100                   # specify the project

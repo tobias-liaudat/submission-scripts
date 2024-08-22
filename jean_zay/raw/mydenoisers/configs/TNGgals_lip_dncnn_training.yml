@@ -1,16 +1,16 @@
 # Define paths
-checkpoint_dir: /lustre/fswork/projects/rech/ynx/ulx23va/projects/projects-ns/trained_models/TNGgals/dncnn/
+checkpoint_dir: /lustre/fswork/projects/rech/ynx/ulx23va/projects/projects-ns/trained_models/TNGgals/lip_dncnn/
 dataset_path: /lustre/fswork/projects/rech/ynx/ulx23va/datasets/TNGgals/raw
 
 # Experiment name
 experiment: dncnn_TNGgals
-run_name: full_train_dncnn_TNGgals
+run_name: full_train_lip_dncnn_TNGgals
 
 # Data
 dataset_name: TNGgals
 patch_size: 256
-train_datapoints: 5e4
-eval_datapoints: 1e3
+train_datapoints: 1e4
+eval_datapoints: 1e2
 test_datapoints: 0
 use_gray_imgs: True
 in_channels: 1
@@ -21,7 +21,7 @@ out_channels: 1
 
 # Denoiser
 denoiser_name: dncnn
-pretrained_init: False
+pretrained_init: True
 sigma_train: 0.059
 sigma_min: 0
 sigma_max: 0
@@ -43,7 +43,7 @@ weight_decay: 0
 loss:
   MSE: True
   L1: False
-  FNE_regularisation: False
+  FNE_regularisation: True
 
 
 # FNE regularisation parameters

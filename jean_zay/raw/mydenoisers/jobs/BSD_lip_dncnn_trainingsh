@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=TNGgals_dncnn_training_long    # nom du job
+#SBATCH --job-name=BSD_lip_dncnn_training    # nom du job
 #SBATCH --mail-user=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
 ##SBATCH --partition=gpu_p2          # de-commente pour la partition gpu_p2
@@ -26,5 +26,5 @@ cd $WORK/projects/submission-scripts/jean_zay/
 set -x
 
 srun python -u $WORK/projects/projects-ns/myDenoisers/scripts/runner_train_denoiser.py \
-    -c ./raw/mydenoisers/configs/TNGgals_dncnn_training.yml -s
+    -c ./raw/mydenoisers/configs/BSD_lip_dncnn_training.yml -s
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=TNGgals_dncnn_training_long    # nom du job
+#SBATCH --job-name=BSD_crr_training    # nom du job
 #SBATCH --mail-user=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
 ##SBATCH --partition=gpu_p2          # de-commente pour la partition gpu_p2
@@ -10,7 +10,7 @@
 #SBATCH -C v100-32g 
 # /!\ Attention, "multithread" fait reference a l'hyperthreading dans la terminologie Slurm
 #SBATCH --hint=nomultithread         # hyperthreading desactive
-#SBATCH --time=100:00:00              # temps d'execution maximum demande (HH:MM:SS)
+#SBATCH --time=20:00:00              # temps d'execution maximum demande (HH:MM:SS)
 #SBATCH --output=R-%x_%A_%a.out  # nom du fichier de sortie
 #SBATCH --error=R-%x_%A_%a.err   # nom du fichier d'erreur (ici commun avec la sortie)
 #SBATCH -A ynx@v100                   # specify the project
@@ -25,6 +25,6 @@ cd $WORK/projects/submission-scripts/jean_zay/
 # echo des commandes lancees
 set -x
 
-srun python -u $WORK/projects/projects-ns/myDenoisers/scripts/runner_train_denoiser.py \
-    -c ./raw/mydenoisers/configs/TNGgals_dncnn_training.yml -s
+srun python -u $WORK/projects/projects-ns/myDenoisers/scripts/runner_train_convex_reg.py \
+    -c ./raw/mydenoisers/configs/BSD_CRR_training.json -s
 

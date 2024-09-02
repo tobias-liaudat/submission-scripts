@@ -1,0 +1,35 @@
+# Define paths
+dataset_path: /lustre/fswork/projects/rech/ynx/ulx23va/datasets/BSD
+save_dir: /lustre/fswork/projects/rech/ynx/ulx23va/projects/projects-ns/trained_models/BSD/unet/24-08-20-15:18:20
+trained_model_path: /lustre/fswork/projects/rech/ynx/ulx23va/projects/projects-ns/trained_models/BSD/unet/24-08-20-15:18:20/ckp_99.pth.tar
+
+# Experiment and run name for wandb 
+experiment: unet_BSD
+run_name: lipschitz_train_unet
+
+# Data
+dataset_name: BSD
+patch_size: 180
+train_datapoints: 0
+eval_datapoints: 0
+test_datapoints: 0
+use_gray_imgs: True
+in_channels: 1
+out_channels: 1
+# dataset_name: `BSD`, `TNGgals` 
+# if `test_datapoints` is `0`, then the number of original images in the dataet is used.
+
+train_batch_size: 1
+test_batch_size: 1
+num_workers: 4
+
+# Denoiser
+denoiser_name: unet
+pretrained_init: False
+sigma_train: 0.059
+sigma_min: 0
+sigma_max: 0
+
+
+
+

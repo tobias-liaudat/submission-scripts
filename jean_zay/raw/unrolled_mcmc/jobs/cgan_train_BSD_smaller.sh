@@ -19,12 +19,12 @@
 ##SBATCH --array=0-6
 
 # echo des commandes lancees
-set -x
 
 cd /lustre/fswork/projects/rech/rbn/ulx23va/projects/unrolled_cGAN/repos/unrolled_cgan/
 
 . /lustre/fswork/projects/rech/rbn/ulx23va/projects/unrolled_cGAN/repos/submission-scripts/jean_zay/env_configs/unrolled_mcmc.sh
 
+set -x
 
 srun python -u unrolled_cgan.py \
     --config /lustre/fswork/projects/rech/rbn/ulx23va/projects/unrolled_cGAN/repos/submission-scripts/jean_zay/raw/unrolled_mcmc/configs/args_BSD_smaller.yml

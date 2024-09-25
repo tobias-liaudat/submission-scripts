@@ -23,7 +23,7 @@ set -x
 
 cd /lustre/fswork/projects/rech/rbn/ulx23va/projects/unrolled_cGAN/repos/unrolled_cgan/
 
-bash /lustre/fswork/projects/rech/rbn/ulx23va/projects/unrolled_cGAN/repos/submission-scripts/jean_zay/env_configs/unrolled_mcmc.sh
+. /lustre/fswork/projects/rech/rbn/ulx23va/projects/unrolled_cGAN/repos/submission-scripts/jean_zay/env_configs/unrolled_mcmc.sh
 
 
 srun python -u unrolled_cgan.py \

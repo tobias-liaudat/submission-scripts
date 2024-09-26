@@ -1,0 +1,56 @@
+checkpoint_dir: "models/saved_new_cgan_fast"
+mode: "train"
+# Number of code vectors for each phase
+num_z_test: 32
+num_z_valid: 8
+num_z_train: 2
+# Checkpoint dir. If not specified, it will use the default checkpoint dir and
+# subsequent dir
+ckpt_path : "/lustre/fswork/projects/rech/rbn/ulx23va/projects/unrolled_cGAN/saved_models/cGANs/BSD_deblurring_new_fast_l2"
+
+# GAN
+chans: 64
+gen_pool_layers: 4
+disc_layers: 5
+
+
+# Data
+dataset_name: "BSD"
+dataset_path: 'data/BSD'
+Operation: "gaussian_deblurring"
+pad: 0
+in_chans: 1
+out_chans: 1
+im_size: 160
+patch_size: 160
+train_datapoints: 20000
+eval_datapoints: 0
+test_datapoints: 0
+
+# Model
+prior: "pnp_score"
+denoiser: "UNet"
+algorithm: "UNet"
+initialization: "gan"
+# gan_ckpt_path: "path_to_checkpoint_to_use"
+train_denoiser: True
+pretrain_denoiser_epochs: 0
+num_iters: 16
+add_PI: True 
+denoiser_path: '/lustre/fswork/projects/rech/rbn/ulx23va/projects/unrolled_cGAN/saved_models/trained_denoisers/BSD/BSD_lip_dncnn_ckp_53/ckp_53.pth.tar'
+
+# Optimizer:
+lr: 0.001
+prior_lr: 0.001
+beta_1: 0
+beta_2: 0.99
+
+# Loss weights
+gp_weight: 10
+adv_weight: 1e-5
+
+# Training
+gen_regularization: "l2"
+batch_size: 16
+num_epochs: 100
+psnr_gain_tol: 0.25

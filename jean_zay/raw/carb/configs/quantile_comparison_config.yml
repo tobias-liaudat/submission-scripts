@@ -1,0 +1,46 @@
+# ----- #
+# Define paths
+data_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/data/
+trained_models_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/CARB/models/
+save_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/saved_results/quantile_comparison/
+
+
+# Data setting #
+randseed: 123456
+num_workers: 4
+batch_size: 32
+Ntest: 9984
+Ntrain: 10000
+Nval: 1000
+# randseed: Randomseed
+# Ntest: Image examples for the bootstrap procedure. Original value 9984
+# Ntrain: Used for the conformalisation procedure
+# Nval: Used for the conformalisation procedure
+# num_workers: Number of pytorch DataLoader cpu workers
+# batch_size: Experiment batch size
+
+
+# Problem setting
+snr: 40
+MC: 500  
+# snr: Inverse problem SNR (controlling noise level)
+# MC: number of Monte Carlo samples for the bootstrap algorithm
+
+
+# Equivariant action configs
+max_shift: 2 
+max_angle: 1 
+slope: 0
+lowpass: 53 
+highpass: 97 
+level: 3
+# level: used for the downsampling and wavelet decomposition
+
+# CARB configuration
+# max_shift = 2 
+# max_angle = 1 
+# slope = 0
+# lowpass = 53 
+# highpass = 97 
+
+

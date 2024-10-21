@@ -1,0 +1,60 @@
+# ----- #
+# Define paths
+data_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/data/
+trained_models_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/CARB/models/
+save_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/saved_results/long_carb/
+
+
+# Data setting #
+randseed: 123456
+num_workers: 4
+batch_size: 64
+Ntest: 10000
+Ntrain: 10000
+Nval: 1000
+# randseed: Randomseed
+# Ntest: Image examples for the bootstrap procedure. Original value 10000
+# Ntrain: Used for the conformalisation procedure
+# Nval: Used for the conformalisation procedure
+# num_workers: Number of pytorch DataLoader cpu workers
+# batch_size: Experiment batch size
+
+
+# Problem setting
+snr: 40
+MC: 500  
+# snr: Inverse problem SNR (controlling noise level)
+# MC: number of Monte Carlo samples for the bootstrap algorithm
+
+
+
+# Experiment config 
+outer_bar: False
+show_images: False
+show_cvg: True
+conformalize: False
+compute_quantile: True 
+compute_variance: False  
+analysis: "" 
+# outer_bar: verbose for outer dataset loop -> verbose = not outer_bar
+# analysis: can be set as '', 'wv', 'pool', or 'hist'
+# compute_quantile: can be set as parameter in bootstrap to visualize / evaluate coverage of 90th quantile of estimated error
+# compute_variance: can be set as parameter in bootstrap to visualize / evaluate coverage of average estimated error
+
+# Equivariant action configs
+max_shift: 2 
+max_angle: 1 
+slope: 0
+lowpass: 53 
+highpass: 97 
+level: 3
+# level: used for the downsampling and wavelet decomposition
+
+# CARB configuration
+# max_shift = 2 
+# max_angle = 1 
+# slope = 0
+# lowpass = 53 
+# highpass = 97 
+
+

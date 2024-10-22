@@ -27,5 +27,5 @@ cd /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/CARB
 set -x
 
 srun python -u ./scripts/compare_quantiles_bootstraps.py \
-    --config /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/submission-scripts/jean_zay/raw/carb/configs/uantile_comparison_config.yml -s
+    --config /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/submission-scripts/jean_zay/raw/carb/configs/quantile_comparison_config.yml -s
 

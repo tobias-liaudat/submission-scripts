@@ -9,9 +9,9 @@ save_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/saved_results/
 randseed: 123456
 num_workers: 4
 batch_size: 64
-Ntest: 129
-Ntrain: 129
-Nval: 129
+Ntest: 10000
+Ntrain: 10000
+Nval: 1000
 bootstrap_verbose: False
 # randseed: Randomseed
 # Ntest: Image examples for the bootstrap procedure. Original value 10000
@@ -24,8 +24,8 @@ bootstrap_verbose: False
 
 # Problem setting
 snr: 40
-MC: 20  
-n_percentiles: 5
+MC: 500  
+n_percentiles: 100
 # snr: Inverse problem SNR (controlling noise level)
 # MC: number of Monte Carlo samples for the bootstrap algorithm
 # n_percentiles: number of percentiles to use for the coverage plot. Default is 100

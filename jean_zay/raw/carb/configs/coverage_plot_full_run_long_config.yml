@@ -1,0 +1,52 @@
+# ----- #
+# Define paths
+data_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/data/
+trained_models_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/CARB/models/
+save_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/saved_results/final_results/full_run_long/
+
+
+# Data setting #
+randseed: 123456
+num_workers: 4
+batch_size: 64
+Ntest: 10000
+Ntrain: 10000
+Nval: 1000
+bootstrap_verbose: False
+# randseed: Randomseed
+# Ntest: Image examples for the bootstrap procedure. Original value 10000 -> 5000
+# Ntrain: Used for the conformalisation procedure
+# Nval: Used for the conformalisation procedure
+# num_workers: Number of pytorch DataLoader cpu workers
+# batch_size: Experiment batch size
+# bootstrap_verbose: bootstrap verbosity
+
+
+# Problem setting
+snr: 40
+MC: 500  
+n_percentiles: 100
+# snr: Inverse problem SNR (controlling noise level)
+# MC: number of Monte Carlo samples for the bootstrap algorithm
+# n_percentiles: number of percentiles to use for the coverage plot. Default is 100 -> 40
+
+
+# Equivariant action configs
+equivariant: True
+max_shift: 2 
+max_angle: 1 
+slope: 0
+lowpass: 53 
+highpass: 97 
+level: 3
+# equivariant: boolean to choose if use equivariant transformations or not.
+# level: used for the downsampling and wavelet decomposition
+
+# CARB configuration
+# max_shift = 2 
+# max_angle = 1 
+# slope = 0
+# lowpass = 53 
+# highpass = 97 
+
+

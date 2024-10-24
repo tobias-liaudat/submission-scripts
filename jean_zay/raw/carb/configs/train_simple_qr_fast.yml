@@ -1,0 +1,39 @@
+# ----- #
+# Define paths
+data_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/data/
+trained_models_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/CARB/models/
+save_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/saved_results/final_results/simple_qr_train/
+
+train_suffix: simpleQR_fast
+
+# Data setting #
+randseed: 123456
+num_workers: 4
+batch_size: 64
+Ntest: 10000
+Ntrain: 10000
+Nval: 100
+# randseed: Randomseed
+# Ntest: Image examples for the bootstrap procedure. Original value 10000
+# Ntrain: Used for the conformalisation procedure
+# Nval: Used for the conformalisation procedure
+# num_workers: Number of pytorch DataLoader cpu workers
+# batch_size: Experiment batch size
+
+
+# Problem setting
+snr_min: 30
+snr_max: 60
+# snr: Inverse problem SNR (controlling noise level)
+
+
+# Train params
+max_epochs: 250
+NLayers: 10
+gs_type: vectorM
+# dataType: simData
+dataType: astroData
+eps: 0.1
+tn: True
+
+

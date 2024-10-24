@@ -26,6 +26,6 @@ cd /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/CARB
 
 set -x
 
-srun python -u ./scripts/coverage_plot_scrip_CARB.py \
+srun python -u ./scripts/coverage_plot_script_CARB.py \
     --config /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/submission-scripts/jean_zay/raw/carb/configs/coverage_plot_ARB_config.yml -s
 

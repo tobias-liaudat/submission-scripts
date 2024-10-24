@@ -9,12 +9,12 @@ save_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/saved_results/
 randseed: 123456
 num_workers: 4
 batch_size: 64
-Ntest: 10000
-Ntrain: 10000
+Ntest: 5000
+Ntrain: 5000
 Nval: 1000
 bootstrap_verbose: False
 # randseed: Randomseed
-# Ntest: Image examples for the bootstrap procedure. Original value 10000
+# Ntest: Image examples for the bootstrap procedure. Original value 10000 -> 5000
 # Ntrain: Used for the conformalisation procedure
 # Nval: Used for the conformalisation procedure
 # num_workers: Number of pytorch DataLoader cpu workers
@@ -25,10 +25,10 @@ bootstrap_verbose: False
 # Problem setting
 snr: 40
 MC: 500  
-n_percentiles: 100
+n_percentiles: 40
 # snr: Inverse problem SNR (controlling noise level)
 # MC: number of Monte Carlo samples for the bootstrap algorithm
-# n_percentiles: number of percentiles to use for the coverage plot. Default is 100
+# n_percentiles: number of percentiles to use for the coverage plot. Default is 100 -> 40
 
 
 # Equivariant action configs

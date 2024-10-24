@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=ARB_coverage_plots    # nom du job
+#SBATCH --job-name=ARB_coverage_plots_long    # nom du job
 #SBATCH --mail-user=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
 ##SBATCH --partition=gpu_p2          # de-commente pour la partition gpu_p2

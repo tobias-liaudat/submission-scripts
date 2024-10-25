@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=conformalisation_calc    # nom du job
+#SBATCH --job-name=conformalisation_calc_good    # nom du job
 #SBATCH --mail-user=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
 ##SBATCH --partition=gpu_p2          # de-commente pour la partition gpu_p2

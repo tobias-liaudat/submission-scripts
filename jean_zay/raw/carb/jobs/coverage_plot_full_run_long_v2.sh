@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=coverage_plot_full_run_long_v2_    # nom du job
+#SBATCH --job-name=v2_coverage_plot_full_run_long_    # nom du job
 #SBATCH --mail-user=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
 ##SBATCH --partition=gpu_p2          # de-commente pour la partition gpu_p2

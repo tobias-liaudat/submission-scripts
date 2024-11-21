@@ -1,0 +1,72 @@
+# Define paths
+checkpoint_dir: /lustre/fswork/projects/rech/ynx/ulx23va/projects/projects-ns/trained_models/CIFAR/unet/
+dataset_path: /lustre/fswork/projects/rech/rbn/ulx23va/datasets/cifar-10-batches-py
+
+# Experiment name
+experiment: unet_CIFAR
+run_name: full_train_unet_CIFAR
+
+# Data
+dataset_name: CIFAR
+patch_size: 32
+train_datapoints: 0
+eval_datapoints: 0
+test_datapoints: 0
+use_gray_imgs: False
+in_channels: 3
+out_channels: 3
+# dataset_name: `BSD`, `TNGgals` 
+# if `test_datapoints` is `0`, then the number of original images in the dataet is used.
+
+
+# Denoiser
+denoiser_name: unet
+pretrained_init: False
+sigma_train: 0.059
+sigma_min: 0
+sigma_max: 0
+
+# Training
+train_batch_size: 32
+test_batch_size: 16
+num_workers: 4
+num_epochs: 100
+
+ckp_interval: 1
+eval_interval: 1
+
+# Optimizer
+learning_rate: 1e-4
+weight_decay: 0
+
+# Losses 
+loss:
+  MSE: True
+  L1: False
+  FNE_regularisation: False
+
+
+# FNE regularisation parameters
+FNE_reg:
+  FNE_reg_loss_strength:  1e-5
+  eps_jacobian_loss: 5e-2
+  max_iter: 10
+  train: True
+
+# Metrics
+metrics:
+  losses: True
+  PSNR: True
+  SSIM: True
+  LPIPS: True
+  NIQE: False
+
+# Logging and visualisation
+wandb_vis: True
+verbose: True
+plot_images: True
+img_log_epochs: 5
+
+
+
+

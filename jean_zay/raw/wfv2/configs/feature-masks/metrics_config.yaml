@@ -1,21 +1,21 @@
 metrics:
    # Specify the type of model weights to load by entering "psf_model" to load weights of final psf model or "checkpoint" to load weights from a checkpoint callback.
-  model_save_path: <enter psf_model or checkpoint>
+  model_save_path: checkpoint
   # Choose the training cycle for which to evaluate the psf_model. Can be: 1, 2, ...
   saved_training_cycle: 2
   # Metrics-only run: Specify model_params for a pre-trained model else leave blank if running training + metrics
   # Specify path to Parent Directory of Trained Model 
-  trained_model_path: </path/to/parent/directory/of/trained/model>
+  trained_model_path: 
   # Name of the Trained Model Config file stored in config sub-directory in the trained_model_path parent directory
-  trained_model_config: <enter name of trained model config file>
+  trained_model_config: 
   #Evaluate the monchromatic RMSE metric.
-  eval_mono_metric_rmse: True
+  eval_mono_metric: True
   #Evaluate the OPD RMSE metric.
-  eval_opd_metric_rmse: True
+  eval_opd_metric: True
   #Evaluate the super-resolution and the shape RMSE metrics for the train dataset.
-  eval_train_shape_sr_metric_rmse: True
+  eval_train_shape_results_dict: True
   # Name of Plotting Config file - Enter name of yaml file to run plot metrics else if empty run metrics evaluation only
-  plotting_config: <enter name of plotting_config .yaml file or leave empty>
+  plotting_config: plotting_config.yaml
   ground_truth_model:
     model_params:
       #Model used as ground truth for the evaluation. Options are: 'poly' for polychromatic and 'physical' [not available].
@@ -36,6 +36,9 @@ metrics:
         
       #Dimension of the OPD/Wavefront space."
       pupil_diameter: 256
+
+      # Use masks in the output
+      masked_outputs: True
 
       #Boolean to define if we use sample weights based on the noise standard deviation estimation
       use_sample_weights: True 

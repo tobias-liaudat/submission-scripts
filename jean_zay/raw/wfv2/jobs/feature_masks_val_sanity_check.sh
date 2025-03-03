@@ -17,14 +17,15 @@
 ##SBATCH --qos=qos_gpu-dev            # using the dev queue, as this is only for profiling
 ##SBATCH --array=0-3
 
-# echo des commandes lancees
-set -x
 
 # Load env
 cd /lustre/fswork/projects/rech/ynx/ulx23va/wfv2/repos/feature_mask/submission-scripts/jean_zay/env_configs/
 . wfv2.sh
 
 sleep 60
+
+# echo des commandes lancees
+set -x
 
 wavediff -c /lustre/fswork/projects/rech/ynx/ulx23va/wfv2/repos/feature_mask/submission-scripts/jean_zay/raw/wfv2/configs/feature-masks_sanity_check/configs.yaml \
          -r /lustre/fswork/projects/rech/ynx/ulx23va/wfv2/repos/feature_mask/wf-psf \

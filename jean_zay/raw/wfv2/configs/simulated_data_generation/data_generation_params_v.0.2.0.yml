@@ -76,7 +76,7 @@ base_params:
 psf_field_params:
   # Differentiate the two datasets
   n_train_stars: 2000
-  n_test_stars: 600
+  n_test_stars: 400
 
   # Simulation options can be: 'SFE', 'NoSFE', `new_polynomial`, `reference_polynomial`
   sims_option: reference_polynomial

@@ -1,6 +1,6 @@
 training:
   # ID name
-  id_name: wf_simulated_dataset_v1.1.0
+  id_name: wf_simulated_dataset_v1_1_0
   # Name of Data Config file
   data_config: data_config.yaml 
   # If true, load dataset from file when initializing DataHandler.

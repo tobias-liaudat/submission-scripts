@@ -29,5 +29,5 @@ set -x
 
 wavediff -c /lustre/fswork/projects/rech/ynx/ulx23va/wfv2/repos/case_study_psf_decontamination/submission-scripts/jean_zay/raw/wfv2/configs/simulated_data_processing/v0.1.0/configs.yaml \
          -r /lustre/fswork/projects/rech/ynx/ulx23va/wfv2/repos/case_study_psf_decontamination/wf-psf \
-         -o /lustre/fswork/projects/rech/ynx/ulx23va/wfv2/repos/case_study_psf_decontamination/outputs/v0.1.0
+         -o /lustre/fswork/projects/rech/ynx/ulx23va/wfv2/repos/case_study_psf_decontamination/outputs/v0_1_0
 

@@ -8,7 +8,7 @@
 #SBATCH -C v100-32g 
 # /!\ Attention, "multithread" fait reference a l'hyperthreading dans la terminologie Slurm
 #SBATCH --hint=nomultithread         # hyperthreading desactive
-#SBATCH --time=10:00:00              # temps d'execution maximum demande (HH:MM:SS)
+#SBATCH --time=20:00:00              # temps d'execution maximum demande (HH:MM:SS)
 #SBATCH --output=data_gen_v2.3.0_%j.out  # nom du fichier de sortie
 #SBATCH --error=data_gen_v2.3.0_%j.err   # nom du fichier d'erreur (ici commun avec la sortie)
 #SBATCH --mail-use=tobiasliaudat@gmail.com

@@ -9,8 +9,8 @@
 # /!\ Attention, "multithread" fait reference a l'hyperthreading dans la terminologie Slurm
 #SBATCH --hint=nomultithread         # hyperthreading desactive
 #SBATCH --time=20:00:00              # temps d'execution maximum demande (HH:MM:SS)
-#SBATCH --output=default_train_masked_and_binary_stars_then_q3_removed_%j-%x_%A_%a.out  # nom du fichier de sortie
-#SBATCH --error=default_train_masked_and_binary_stars_then_q3_removed_%j-%x_%A_%a.err   # nom du fichier d'erreur (ici commun avec la sortie)
+#SBATCH --output=R-%x_%A_%a.out  # nom du fichier de sortie
+#SBATCH --error=R-%x_%A_%a.err   # nom du fichier d'erreur (ici commun avec la sortie)
 #SBATCH --mail-use=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
 #SBATCH -A uem@v100                   # specify the project

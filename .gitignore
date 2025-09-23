@@ -13,6 +13,8 @@ jean_zay/wandb/wandb/*
 jean_zay/wandb/*.log
 jean_zay/wandb/latest-run
 
+*.DS_Store
+
 # C extensions
 *.so
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=RIGAN_v2_batch20    # nom du job
+#SBATCH --job-name=RIGAN_v2_batch10_short    # nom du job
 #SBATCH --mail-user=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
 ##SBATCH --partition=gpu_p2          # de-commente pour la partition gpu_p2
@@ -31,7 +31,7 @@ export WANDB_CONFIG_DIR=/lustre/fswork/projects/rech/rbn/ulx23va/projects/unroll
 export TMPDIR=$JOBSCRATCH
 
 srun python -u train.py \
-    --config /lustre/fswork/projects/rech/rbn/ulx23va/projects/unrolled_cGAN/repos/submission-scripts/jean_zay/raw/RIGAN/configs/radio_meerkat_macro-v2_batch_20.yml \
-    --exp-name RIGAN_v2_batch_20 \
+    --config /lustre/fswork/projects/rech/rbn/ulx23va/projects/unrolled_cGAN/repos/submission-scripts/jean_zay/raw/RIGAN/configs/radio_meerkat_macro-v2_batch_10_short.yml \
+    --exp-name RIGAN_v2_batch_10 \
     --num-gpus 1
 

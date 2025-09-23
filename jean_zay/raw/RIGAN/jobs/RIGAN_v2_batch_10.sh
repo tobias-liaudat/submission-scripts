@@ -4,7 +4,7 @@
 #SBATCH --mail-type=ALL
 ##SBATCH --partition=gpu_p2          # de-commente pour la partition gpu_p2
 #SBATCH --ntasks=1                   # nombre total de tache MPI (= nombre total de GPU)
-#SBATCH --ntasks-per-node=1          # nombre de tache MPI par noeud (= nombre de GPU par noeud)
+#SBATCH --ntasks-per-node=2          # nombre de tache MPI par noeud (= nombre de GPU par noeud)
 #SBATCH --gres=gpu:2                 # nombre de GPU par n?~Sud (max 8 avec gpu_p2)
 #SBATCH --cpus-per-task=10           # nombre de coeurs CPU par tache (un quart du noeud ici)
 #SBATCH -C v100-32g 

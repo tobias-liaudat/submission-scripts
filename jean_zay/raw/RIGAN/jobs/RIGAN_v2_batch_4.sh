@@ -15,7 +15,7 @@
 #SBATCH --error=R-%x_%A_%a.err   # nom du fichier d'erreur (ici commun avec la sortie)
 #SBATCH -A uem@v100                   # specify the project
 ##SBATCH --qos=qos_gpu-dev            # using the dev queue, as this is only for profiling
-##SBATCH --qos=qos_gpu-t4              # Long queue
+#SBATCH --qos=qos_gpu-t4              # Long queue
 ##SBATCH --array=0-6
 
 # echo des commandes lancees

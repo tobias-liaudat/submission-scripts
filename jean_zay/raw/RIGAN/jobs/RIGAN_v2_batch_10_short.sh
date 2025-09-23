@@ -32,6 +32,6 @@ export TMPDIR=$JOBSCRATCH
 
 srun python -u train.py \
     --config /lustre/fswork/projects/rech/rbn/ulx23va/projects/unrolled_cGAN/repos/submission-scripts/jean_zay/raw/RIGAN/configs/radio_meerkat_macro-v2_batch_10_short.yml \
-    --exp-name RIGAN_v2_batch_10 \
+    --exp-name RIGAN_v2_batch_10_short \
     --num-gpus 1
 

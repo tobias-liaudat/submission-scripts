@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=RIGAN_v2_batch10    # nom du job
+#SBATCH --job-name=debug_RIGAN_v2_batch10    # nom du job
 #SBATCH --mail-user=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
 ##SBATCH --partition=gpu_p2          # de-commente pour la partition gpu_p2

@@ -29,5 +29,5 @@ set -x
 
 wavediff -c /lustre/fswork/projects/rech/rbn/ulx23va/projects/wf_projects/real_data_processing_conference/submission-scripts/jean_zay/raw/wfv2_real_data/configs/default_train_masked_and_binary_stars_then_q3_removed/configs.yaml \
          -r /lustre/fswork/projects/rech/rbn/ulx23va/projects/wf_projects/real_data_processing_conference/wf-psf \
-         -o /lustre/fswork/projects/rech/rbn/ulx23va/projects/wf_projects/real_data_processing_conference/outputs/dataset_obs2378_masked_stars_then_q3_removed
+         -o /lustre/fswork/projects/rech/rbn/ulx23va/projects/wf_projects/real_data_processing_conference/outputs/dataset_obs2378_masked_stars_then_q3_removed/default
 

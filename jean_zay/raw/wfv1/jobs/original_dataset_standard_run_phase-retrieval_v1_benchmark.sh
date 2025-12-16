@@ -66,9 +66,9 @@ srun python -u ./train_eval_plot_script_click_multi_cycle.py \
     --dataset_folder /lustre/fswork/projects/rech/rbn/ulx23va/projects/wf_projects/phase_retrieval_paper/repo/wf-psf/data/coherent_euclid_dataset/ \
     --test_dataset_file test_Euclid_res_id_001.npy \
     --train_dataset_file train_Euclid_res_2000_TrainStars_id_001.npy \
-    --base_path /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v1/ \
-    --metric_base_path /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v1/metrics/ \
-    --chkp_save_path /gpfsscratch/rech/ynx/ulx23va/wfv2/phase-retrieval-PR/output_v1/chkp/ \
+    --base_path /lustre/fswork/projects/rech/rbn/ulx23va/projects/wf_projects/phase_retrieval_paper/outputs/wf_output_benchmark_run/ \
+    --metric_base_path /lustre/fswork/projects/rech/rbn/ulx23va/projects/wf_projects/phase_retrieval_paper/outputs/wf_output_benchmark_run/metrics/ \
+    --chkp_save_path /lustre/fswork/projects/rech/rbn/ulx23va/projects/wf_projects/phase_retrieval_paper/outputs/wf_output_benchmark_run/chkp/ \
     --plots_folder plots/ \
     --model_folder chkp/ \
     --log_folder log-files/ \

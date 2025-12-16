@@ -15,7 +15,7 @@
 #SBATCH --mail-type=ALL
 #SBATCH -A ynx@v100                   # specify the project
 ##SBATCH --qos=qos_gpu-dev            # using the dev queue, as this is only for profiling
-#SBATCH --array=0-3
+#SBATCH --array=0-4
 
 # Load env
 cd /lustre/fswork/projects/rech/rbn/ulx23va/projects/wf_projects/phase_retrieval_paper/repo/submission-scripts/jean_zay/env_configs/
@@ -28,6 +28,7 @@ opt[0]="--id_name _original_dataset_wf_PR_NewPRoj_12_cycles_v0 --random_seed 500
 opt[1]="--id_name _original_dataset_wf_PR_NewPRoj_12_cycles_v1 --random_seed 5100"
 opt[2]="--id_name _original_dataset_wf_PR_NewPRoj_12_cycles_v2 --random_seed 5200"
 opt[3]="--id_name _original_dataset_wf_PR_NewPRoj_12_cycles_v3 --random_seed 5300"
+opt[4]="--id_name _original_dataset_wf_PR_NewPRoj_12_cycles_v4 --random_seed 5400"
 
 cd /lustre/fswork/projects/rech/rbn/ulx23va/projects/wf_projects/phase_retrieval_paper/repo/wf-psf/long-runs/
 
@@ -73,8 +74,8 @@ srun python -u ./train_eval_plot_script_click_multi_cycle.py \
     --model_folder chkp/ \
     --log_folder log-files/ \
     --optim_hist_folder optim-hist/ \
-    --suffix_id_name v0 --suffix_id_name v1 --suffix_id_name v2 --suffix_id_name v3 \
-    --star_numbers 10 --star_numbers 20 --star_numbers 30 --star_numbers 40 \
+    --suffix_id_name v0 --suffix_id_name v1 --suffix_id_name v2 --suffix_id_name v3 --suffix_id_name v4 \
+    --star_numbers 10 --star_numbers 20 --star_numbers 30 --star_numbers 40 --star_numbers 50 \
     ${opt[$SLURM_ARRAY_TASK_ID]} \
 
 

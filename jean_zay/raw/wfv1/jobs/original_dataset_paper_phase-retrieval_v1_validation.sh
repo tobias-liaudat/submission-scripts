@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=PR_original_dataset_validation_wfv1_test_n1_    # nom du job
-##SBATCH --partition=qos_gpu-t4          # de-commente pour la partition gpu_p2
+##SBATCH --partition=gpu_p2          # de-commente pour la partition gpu_p2
 #SBATCH --ntasks=1                   # nombre total de tache MPI (= nombre total de GPU)
 #SBATCH --ntasks-per-node=1          # nombre de tache MPI par noeud (= nombre de GPU par noeud)
 #SBATCH --gres=gpu:1                 # nombre de GPU par n?~Sud (max 8 avec gpu_p2)
@@ -14,7 +14,7 @@
 #SBATCH --mail-use=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
 #SBATCH -A ynx@v100                   # specify the project
-##SBATCH --qos=qos_gpu-dev            # using the dev queue, as this is only for profiling
+#SBATCH --qos=qos_gpu-t4            # using the dev queue, as this is only for profiling
 #SBATCH --array=0-4
 
 # Load env

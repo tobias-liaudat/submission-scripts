@@ -1,0 +1,40 @@
+
+# Data paths
+radio_img_path: /lustre/fswork/projects/rech/rbn/commun/datasets/radio_imgs/TNG50_images_64.h5
+UV_path: /lustre/fswork/projects/rech/rbn/commun/datasets/uv_patterns/UVtab_1000_1h.npy
+
+# Data parameters
+radio_img_size: 64
+train_val_split: 0.9
+n_train_val_tot: 1000  # if n_train_val_tot is None, use all available data. Otherwise, use n_train_val_tot samples for training and validation.
+n_uv_train_val_tot: 500  # if n_uv_train_val_tot is None, use all available UV data. Otherwise, use n_uv_train_val_tot samples for training and validation.
+
+# Original args
+Nlayers: 10
+alpha_mode: conv
+beta_mode: DRUNet
+
+layerwise: False
+
+base_check_dir: ./saved_models/logs/
+ckpt_path: null  # path to a specific checkpoint file to resume training, or null to start fresh
+
+# Training args
+max_epochs: 250
+ngpu: 1
+batch_size: 8
+num_workers: 10
+verbose: True
+
+# Noise
+add_noise: True
+snr_min: 10
+snr_max: 40
+
+# Logging
+use_wandb: True
+wandb_project: unrolling4ri
+wandb_run_name: null  # null uses the auto-generated nameLog string
+
+
+

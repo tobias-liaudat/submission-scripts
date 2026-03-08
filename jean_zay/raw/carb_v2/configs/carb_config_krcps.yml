@@ -25,6 +25,7 @@ MC: 20
 equivariant: true
 exact_rotations: false
 print_transformations: false
+bootstrap_verbose: false
 
 max_shift: 2
 max_angle: 1

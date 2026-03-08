@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=krcps_test_all_fast    # nom du job
+#SBATCH --job-name=krcps_test_all_fast_run01    # nom du job
 #SBATCH --mail-user=tobiasliaudat@gmail.com
 #SBATCH --mail-type=ALL
 ##SBATCH --partition=gpu_p2          # de-commente pour la partition gpu_p2
@@ -30,14 +30,14 @@ export TMPDIR=$JOBSCRATCH
 # Compute the K-RCPS conformalization values and save them to disk
 echo "Computing K-RCPS conformalization values..."
 srun python -u krcps_lambdas.py \
-    -c /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/submission-scripts/jean_zay/raw/carb_v2/configs/carb_config_krcps.yml
+    -c /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/submission-scripts/jean_zay/raw/carb_v2/configs/carb_config_krcps_run01.yml
 
 # Compute the RCPS conformalization values and save them to disk
 echo "Computing RCPS conformalization values..."
 srun python -u conformalisation_lambdas.py \
-    -c /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/submission-scripts/jean_zay/raw/carb_v2/configs/carb_config_krcps.yml
+    -c /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/submission-scripts/jean_zay/raw/carb_v2/configs/carb_config_krcps_run01.yml
 
 # Compute the coverage
 echo "Computing coverage and other metrics for K-RCPS..."
 srun python -u coverage_plot_krcps_script.py \
-    -c /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/submission-scripts/jean_zay/raw/carb_v2/configs/carb_config_krcps.yml
+    -c /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/repos/submission-scripts/jean_zay/raw/carb_v2/configs/carb_config_krcps_run01.yml

@@ -7,9 +7,9 @@ randseed: 123
 # --- Paths ---
 data_path: /lustre/fswork/projects/rech/rbn/commun/datasets/original_data/
 trained_models_path: /lustre/fswork/projects/rech/rbn/commun/trained_models/original_models/
-save_path: /lustre/fswork/projects/rech/rbn/uod82su/projects/repos/CARB/results/
-lambda_values_path: /lustre/fswork/projects/rech/rbn/uod82su/projects/repos/CARB/results/krcps_conformalization_values.npy
-rcps_values_path: /lustre/fswork/projects/rech/rbn/uod82su/projects/repos/CARB/papers/2024_neurips/results/conformalization_values.npy
+save_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/KRCP_results/
+lambda_values_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/KRCP_results/krcps_conformalization_values.npy
+rcps_values_path: /lustre/fswork/projects/rech/rbn/ulx23va/projects/CARB/KRCP_results/conformalization_values.npy
 
 
 # --- Data ---
@@ -37,7 +37,7 @@ filter_floor: 0.16
 cutoff_sigma: 4
 
 # --- Percentiles ---
-n_percentiles: 19   # 0.1 to 0.9
+n_percentiles: 9   # 0.1 to 0.9
 
 # ===============================
 #   K-RCPS specific parameters

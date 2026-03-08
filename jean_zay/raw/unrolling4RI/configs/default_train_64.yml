@@ -33,6 +33,7 @@ snr_max: 40
 
 # Logging
 use_wandb: True
+wandb_offline: true  # set to true when running on a node without internet access
 wandb_project: unrolling4ri
 wandb_run_name: null  # null uses the auto-generated nameLog string
 

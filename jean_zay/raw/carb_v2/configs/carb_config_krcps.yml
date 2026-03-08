@@ -1,0 +1,49 @@
+# ===============================
+#   CONFIG FOR K-RCPS PIPELINE
+# ===============================
+
+randseed: 123
+
+# --- Paths ---
+data_path: /lustre/fswork/projects/rech/rbn/commun/datasets/original_data/
+trained_models_path: /lustre/fswork/projects/rech/rbn/commun/trained_models/original_models/
+save_path: /lustre/fswork/projects/rech/rbn/uod82su/projects/repos/CARB/results/
+lambda_values_path: /lustre/fswork/projects/rech/rbn/uod82su/projects/repos/CARB/results/krcps_conformalization_values.npy
+rcps_values_path: /lustre/fswork/projects/rech/rbn/uod82su/projects/repos/CARB/papers/2024_neurips/results/conformalization_values.npy
+
+
+# --- Data ---
+num_workers: 0
+batch_size: 1
+Ntrain: 2000
+Nval: 200
+Ntest: 320
+snr: 40
+
+# --- Bootstrap ---
+MC: 20
+equivariant: true
+exact_rotations: false
+print_transformations: false
+
+max_shift: 2
+max_angle: 1
+slope: 0
+flip: true
+lowpass: 35
+highpass: 70
+pad_size_filters: 12
+filter_floor: 0.16
+cutoff_sigma: 4
+
+# --- Percentiles ---
+n_percentiles: 19   # 0.1 to 0.9
+
+# ===============================
+#   K-RCPS specific parameters
+# ===============================
+K: 4
+lambda_box: [0.0, 5.0]
+gamma_grid: [0.05, 0.1, 0.2]
+beta_max: 2.0
+beta_stepsize: 0.05

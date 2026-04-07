@@ -1,0 +1,53 @@
+
+# ----- #
+# Define paths
+orbit_path: /lustre/fswork/projects/rech/ney/ulx23va/projects/LISA/repos/lisajax_sbi/data/esa-orbits.h5
+output_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/LISA/repos/examples/outputs/trained_models/
+output_name : dataset_500k_sim_1800_samples_tc_range_1000_fixed_masses_noise_off_sky_uniform
+
+path_to_dataset: /lustre/fswork/projects/rech/ney/commun/datasets/datasets_noise_off/dataset_500k_sim_1800_samples_tc_range_1000_fixed_masses_noise_off_sky_uniform_230226.h5
+path_to_summary_dataset: null
+
+# ----- #
+# Data loading parameters
+batch_size: 1024  # 256
+n_samples: null  # Use all samples in dataset if null
+train_fraction: 0.8
+val_fraction: 0.1
+test_fraction: 0.1
+seed: 0
+num_workers: 4
+pin_memory: true
+persistent_workers: true
+prefetch_factor: 4
+summarize_in_workers: true
+
+# ----- #
+# Training parameters
+max_num_epochs: 500
+stop_after_epochs: 60
+lr: 5e-4
+clip_max_norm: 5.0
+
+# ----- #
+# Weights & Biases configuration
+use_wandb: true
+wandb_offline: true
+wandb_project: lisajax-sbi
+
+# ----- #
+# Validation parameters
+n_test_samples: 3
+n_posterior_samples: 10000
+n_tarp_samples: 200
+# posterior_dir:  # path to posterior directory (optional, defaults to most recent)
+
+# ----- #
+# Importance sampling parameters
+use_importance_sampling: true
+is_method: sir
+is_oversampling_factor: 32
+is_n_posterior_samples: 10000
+is_n_tarp_samples: 50
+is_n_tarp_posterior_samples: 100
+

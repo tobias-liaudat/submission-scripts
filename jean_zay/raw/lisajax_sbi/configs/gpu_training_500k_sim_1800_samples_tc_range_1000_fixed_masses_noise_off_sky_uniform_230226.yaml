@@ -46,8 +46,8 @@ n_tarp_samples: 200
 # Importance sampling parameters
 use_importance_sampling: true
 is_method: sir
-is_oversampling_factor: 32
-is_n_posterior_samples: 10000
+is_oversampling_factor: 8
+is_n_posterior_samples: 100
 is_n_tarp_samples: 50
 is_n_tarp_posterior_samples: 100
 

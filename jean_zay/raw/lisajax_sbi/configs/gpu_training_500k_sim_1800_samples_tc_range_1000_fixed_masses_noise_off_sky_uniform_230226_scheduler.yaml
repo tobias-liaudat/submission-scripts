@@ -3,14 +3,14 @@
 # Define paths
 orbit_path: /lustre/fswork/projects/rech/ney/ulx23va/projects/LISA/repos/lisajax_sbi/data/esa-orbits.h5
 output_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/LISA/repos/examples/outputs/trained_models/
-output_name : dataset_500k_sim_1800_samples_tc_range_1000_fixed_masses_noise_off_sky_uniform
+output_name : dataset_500k_sim_1800_samples_tc_range_1000_fixed_masses_noise_off_sky_uniform_scheduler
 
 path_to_dataset: /lustre/fswork/projects/rech/ney/commun/datasets/datasets_noise_off/dataset_500k_sim_1800_samples_tc_range_1000_fixed_masses_noise_off_sky_uniform_230226.h5
 path_to_summary_dataset: null
 
 # ----- #
 # Data loading parameters
-batch_size: 1024  # 256
+batch_size: 2048  # 256
 n_samples: null  # Use all samples in dataset if null
 train_fraction: 0.8
 val_fraction: 0.1
@@ -25,9 +25,15 @@ summarize_in_workers: true
 # ----- #
 # Training parameters
 max_num_epochs: 500
-stop_after_epochs: 60
-lr: 5e-4
+stop_after_epochs: 100
+lr: 2e-4
 clip_max_norm: 5.0
+
+# Learning rate scheduler (ReduceLROnPlateau)
+use_scheduler: true
+scheduler_factor: 0.4
+scheduler_patience: 15
+scheduler_min_lr: 1e-8
 
 # ----- #
 # Weights & Biases configuration
@@ -41,13 +47,16 @@ n_test_samples: 3
 n_posterior_samples: 10000
 n_tarp_samples: 200
 n_tarp_posterior_samples: 1000
+n_sbc_samples: 200
+n_sbc_posterior_samples: 1000
+show_progress_bars: false
 # posterior_dir:  # path to posterior directory (optional, defaults to most recent)
 
 # ----- #
 # Importance sampling parameters
 use_importance_sampling: true
 is_method: sir
-is_oversampling_factor: 8
+is_oversampling_factor: 32
 is_n_posterior_samples: 100
 is_n_tarp_samples: 50
 is_n_tarp_posterior_samples: 100

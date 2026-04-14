@@ -37,15 +37,20 @@ wandb_project: lisajax-sbi
 
 # ----- #
 # Validation parameters
+## Corner plots
 n_test_samples: 3
 n_posterior_samples: 10000
-n_tarp_samples: 200
+## SBC plots
+n_sbc_samples: 1000
+n_sbc_posterior_samples: 1000
+## TARP plots
+n_tarp_samples: 1000
 n_tarp_posterior_samples: 1000
 # posterior_dir:  # path to posterior directory (optional, defaults to most recent)
 
 # ----- #
 # Importance sampling parameters
-use_importance_sampling: true
+use_importance_sampling: false
 is_method: sir
 is_oversampling_factor: 8
 is_n_posterior_samples: 100

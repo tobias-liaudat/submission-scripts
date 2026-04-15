@@ -29,8 +29,13 @@ cd /lustre/fswork/projects/rech/ney/ulx23va/projects/LISA/repos/lisajax_sbi/scri
 
 export TMPDIR=$JOBSCRATCH
 
-export CONFIG_FILE=/lustre/fswork/projects/rech/ney/ulx23va/projects/LISA/repos/submission-scripts/jean_zay/raw/lisajax_sbi/configs/gpu_training_500k_sim_1800_samples_tc_range_1000_fixed_masses_noise_off_sky_uniform_230226.yaml
+export CONFIG_FILE_1=/lustre/fswork/projects/rech/ney/ulx23va/projects/LISA/repos/submission-scripts/jean_zay/raw/lisajax_sbi/configs/gpu_training_500k_sim_1800_samples_tc_range_1000_fixed_masses_noise_off_sky_uniform_230226.yaml
+export CONFIG_FILE_2=/lustre/fswork/projects/rech/ney/ulx23va/projects/LISA/repos/submission-scripts/jean_zay/raw/lisajax_sbi/configs/gpu_training_500k_sim_1800_samples_tc_range_1000_fixed_masses_noise_off_sky_uniform_230226_scheduler.yaml
+
 
 # Compute the coverage
-echo "Run validation metrics..."
-srun python -u validate_posterior.py -c $CONFIG_FILE
+echo "Run validation metrics for 1st model..."
+srun python -u validate_posterior.py -c $CONFIG_FILE_1
+
+echo "Run validation metrics for 2nd model..."
+srun python -u validate_posterior.py -c $CONFIG_FILE_2

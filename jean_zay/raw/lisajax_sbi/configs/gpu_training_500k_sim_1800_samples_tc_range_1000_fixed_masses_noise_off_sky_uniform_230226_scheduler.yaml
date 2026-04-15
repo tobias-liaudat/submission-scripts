@@ -45,10 +45,10 @@ wandb_project: lisajax-sbi
 # Validation parameters
 n_test_samples: 3
 n_posterior_samples: 10000
-n_tarp_samples: 200
-n_tarp_posterior_samples: 1000
-n_sbc_samples: 200
-n_sbc_posterior_samples: 1000
+n_tarp_samples: 1000
+n_tarp_posterior_samples: 10000
+n_sbc_samples: 1000
+n_sbc_posterior_samples: 10000
 show_progress_bars: false
 # posterior_dir:  # path to posterior directory (optional, defaults to most recent)
 
@@ -57,7 +57,7 @@ show_progress_bars: false
 use_importance_sampling: true
 is_method: sir
 is_oversampling_factor: 32
-is_n_posterior_samples: 100
-is_n_tarp_samples: 50
-is_n_tarp_posterior_samples: 100
+is_n_posterior_samples: 10000
+is_n_tarp_samples: 1000
+is_n_tarp_posterior_samples: 10000
 

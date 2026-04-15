@@ -54,3 +54,4 @@ is_oversampling_factor: 32
 is_n_posterior_samples: 10000
 is_n_tarp_samples: 1000
 is_n_tarp_posterior_samples: 10000
+is_batch_size: 1024

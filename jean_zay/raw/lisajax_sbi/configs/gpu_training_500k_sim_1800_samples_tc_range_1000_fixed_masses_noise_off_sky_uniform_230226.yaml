@@ -7,6 +7,7 @@ output_name : dataset_500k_sim_1800_samples_tc_range_1000_fixed_masses_noise_off
 
 path_to_dataset: /lustre/fswork/projects/rech/ney/commun/datasets/datasets_noise_off/dataset_500k_sim_1800_samples_tc_range_1000_fixed_masses_noise_off_sky_uniform_230226.h5
 path_to_summary_dataset: null
+posterior_dir: null
 
 # ----- #
 # Data loading parameters
@@ -55,3 +56,9 @@ is_n_posterior_samples: 10000
 is_n_tarp_samples: 1000
 is_n_tarp_posterior_samples: 10000
 is_batch_size: 1024
+
+# ----- #
+# Analytical corner plots
+# Done if `use_importance_sampling = true`
+n_analytical_grid: 100
+n_analytical_grid_1d: 250

@@ -1,0 +1,98 @@
+# Production config: large_run_img64_unrolled_n15 (A100, 4-GPU DDP).
+# 15-layer unrolled net, DRUNet prior, greedy sequential training depth 2 -> 15.
+# Full TNG50 dataset; only n_train + n_val + n_test images are read from the
+# directory (load is capped, no need to pre-subset). Runs under the A100 20h QoS
+# with automatic resubmission (see the matching job in ../jobs/): each relaunch
+# resumes from the last checkpoint.
+
+model:
+  type: unrolled_psf
+  nlayers: 15
+  alpha_mode: conv
+  beta_mode: DRUNet
+  train_denoiser: false
+  weighted_loss: true
+
+optim:
+  lr: 0.005
+  lr_step_size: 50
+  lr_gamma: 0.5
+  epochs: 100            # epochs PER sequential stage
+  batch_size: 8
+  accumulate_grad_batches: 1
+  effective_batch_size: 64
+
+data:
+  data_path: /lustre/fswork/projects/rech/uem/commun/datasets/ungridded_dataset
+  img_size: 64
+  n_train: 4000
+  n_val: 500
+  n_test: 500            # disjoint, held out (reserved for evaluation, not trained on)
+  val_fraction: 0.2      # fallback only (ignored because n_val is set)
+  augment: true
+  # Pinned experiment condition. PRE-BUILD IT with the builder job before the
+  # first 4-GPU launch (submit_large_runs.sh does this): under DDP the non-zero
+  # ranks wait at most ~30 min for rank 0 to build a missing condition, and
+  # 1000 op-norms + the 1000-coverage PSF bank take longer. Each large-run
+  # config has its OWN artifacts dir (rather than one shared dir) so the
+  # backend-specific derived caches never ping-pong between the two
+  # concurrently-running chains; the UV bank and image splits inside are
+  # bit-identical across the dirs (same seed and bank params — the builder job
+  # verifies this), so both models still train on exactly the same coverages
+  # and images.
+  artifacts_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/artifacts/large_img64_cov1000_ntrain4000_psf_finufft
+
+operator:
+  name: finufft
+  kwargs: {}
+
+uv:
+  n_coverages: 1000
+  obs_length_h: 1.0      # observation length in hours (longer -> more uv samples)
+  time_delta_s: 300.0    # integration time per sample in seconds (smaller -> more uv samples)
+  super_resolution: 1.5  # longest baseline lands at pi/super_resolution on the grid
+  # Random pointing per coverage: declination [deg] and start hour angle [h]
+  # are drawn uniformly from these ranges. Keep every 1h track above the
+  # MeerKAT ~15 deg elevation limit: with the default obs_length_h the
+  # rectangle dec [-80, 0] x ha [-4, +3] stays above 25 deg elevation and
+  # roughly doubles the coverage-shape diversity; the northernmost dec sets
+  # how far ha may stretch (see the elevation table in the docs). These
+  # parameters are part of the pinned artifacts_dir condition.
+  dec_range: [-45.0, 0.0]
+  ha_range: [-4.0, 0.0]
+  # Optional imaging-weight preconditioning of the physics: null (unweighted,
+  # default), "uniform", or "briggs"/"robust". When set, per-coverage weights W
+  # from radio_tools.gen_imaging_weights are folded into the operator (A -> W A),
+  # visibilities are simulated as y = W(Ax + n) (noise on the raw visibilities,
+  # weighting applied after), and the operator norms / PSF bank are computed for
+  # the weighted operator. NOTE: this is part of the trained physics but is NOT
+  # stored in the checkpoint — evaluate with the same --imaging-weights.
+  imaging_weights: briggs
+
+noise:
+  add: true
+  min: 10
+  max: 40
+
+sequential:
+  enabled: true
+  start_layers: 2
+
+runtime:
+  device: cuda
+  devices: 4
+  num_nodes: 1
+  strategy: ddp          # explicit DDP; job must set ntasks-per-node=4
+  num_workers: 8         # = cpus-per-task on an A100 quarter-node (64/8)
+  seed: 0
+  enable_progress_bar: false
+  log_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/trained_models
+  run_name: null         # overridden by the job with a stable per-chain RUN_ID
+  resume_from: null
+
+wandb:
+  enabled: true
+  offline: true
+  project: radio_reconstruction_tools
+  entity: null
+  name: null

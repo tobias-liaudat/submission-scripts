@@ -1,0 +1,82 @@
+# Production config: unrolled net, DRUNet prior, finufft forward operator.
+# Full TNG50 dataset, greedy sequential training from depth 2 to 10. Designed to
+# run under the 20h GPU QoS with automatic resubmission (see the matching job
+# script ../jobs/unrolled_n10_prior_DRUNet_op_finufft.sh): the run resumes from
+# the last checkpoint each time it is relaunched.
+# Hyper-parameters below (epochs, n_train, batch_size, lr, ...) are starting
+# points -- tune them for the real experiment.
+
+model:
+  type: unrolled
+  nlayers: 10
+  alpha_mode: conv
+  beta_mode: DRUNet
+  train_denoiser: false
+  weighted_loss: true
+
+optim:
+  lr: 0.005
+  lr_step_size: 50
+  lr_gamma: 0.5
+  epochs: 200             # epochs PER sequential stage (tune)
+  batch_size: 8
+  accumulate_grad_batches: 1
+  effective_batch_size: null
+
+data:
+  # Full TNG50 ungridded dataset (13400 images). load_image_dataset reads the
+  # whole directory, so the first epoch's data load takes a while.
+  data_path: /lustre/fswork/projects/rech/uem/commun/datasets/ungridded_dataset
+  img_size: 64
+  n_train: 2048
+  n_val: 256
+  val_fraction: 0.2
+  augment: true
+  # Pinned experiment condition for the n_train=2048 production runs: the first
+  # run creates uv_bank.pt / splits.json / op_norms.pt here, later runs (and
+  # resubmitted chain links) reuse them. Do not share with the n18 campaign
+  # (different split sizes) — that one uses .../tng50_64px_cov16_ntrain4000.
+  artifacts_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/artifacts/tng50_64px_cov16_ntrain2048
+
+operator:
+  name: finufft
+  kwargs: {}
+
+uv:
+  n_coverages: 16
+  obs_length_h: 1.0
+  time_delta_s: 300.0
+  super_resolution: 1.5  # longest baseline lands at pi/super_resolution on the grid
+  imaging_weights: briggs  # Briggs/robust weighting folded into the operator (part of the trained physics; evaluate with the same setting)
+
+noise:
+  add: true
+  min: 10
+  max: 40
+
+# --- Sequential / greedy layer-wise training -------------------------------
+# Greedily train depths 2..10, each warm-started from the previous stage. The
+# schedule is resumable: completed stages drop a STAGE_DONE marker and a
+# relaunch skips them / resumes the interrupted stage from its last.ckpt.
+sequential:
+  enabled: true
+  start_layers: 2
+
+runtime:
+  device: cuda
+  devices: 1
+  num_nodes: 1
+  strategy: auto
+  num_workers: 10        # = cpus-per-task on the job
+  seed: 0
+  enable_progress_bar: false
+  log_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/trained_models
+  run_name: null         # overridden by the job with a stable per-chain RUN_ID
+  resume_from: null
+
+wandb:
+  enabled: true
+  offline: true
+  project: radio_reconstruction_tools
+  entity: null
+  name: null

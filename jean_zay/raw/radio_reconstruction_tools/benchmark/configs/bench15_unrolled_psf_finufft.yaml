@@ -1,0 +1,76 @@
+# Benchmark config: 15-layer PSF unrolled net (unrolled_psf), DRUNet prior, finufft NUFFT.
+# Production-scale problem (full TNG50, 16 coverages, 1h observation, Briggs
+# weighting) used ONLY to time training: benchmark_training.py runs a few real
+# epochs at fixed depth 15 and extrapolates to optim.epochs (fixed-depth) and
+# to the greedy sequential 2..15 schedule. runtime.devices/strategy are
+# overridden by the job scripts (1 GPU vs 4-GPU DDP).
+
+model:
+  type: unrolled_psf     # PSF normal-operator gradient (dirty - A^H A x), batched FFT
+  nlayers: 15
+  alpha_mode: conv
+  beta_mode: DRUNet
+  train_denoiser: false
+  weighted_loss: true
+
+optim:
+  lr: 0.005
+  lr_step_size: 50
+  lr_gamma: 0.5
+  epochs: 100            # extrapolation target (epochs per stage in production)
+  batch_size: 64
+  accumulate_grad_batches: 1
+  effective_batch_size: null
+
+data:
+  data_path: /lustre/fswork/projects/rech/uem/commun/datasets/ungridded_dataset
+  img_size: 64
+  n_train: 2048          # 32 steps/epoch at batch 64 on 1 GPU (8 on 4 GPUs)
+  n_val: 256
+  val_fraction: 0.2
+  augment: true
+  # Shared benchmark experiment condition: the FIRST benchmark job to run
+  # creates it (submit_benchmarks.sh submits the finufft 1-GPU job as the
+  # creator); the other variants reuse it, so all backends are timed on the
+  # identical coverages/images. Same rules as everywhere: pinned
+  # uv/img_size/seed params must match, backend changes recompute derived
+  # caches with a warning.
+  artifacts_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/artifacts/bench15_64px_cov16_ntrain2048
+
+operator:
+  name: finufft
+  kwargs: {}
+
+uv:
+  n_coverages: 16
+  obs_length_h: 1.0
+  time_delta_s: 300.0
+  super_resolution: 1.5
+  imaging_weights: briggs  # Briggs/robust weighting folded into the operator
+
+noise:
+  add: true
+  min: 10
+  max: 40
+
+sequential:
+  enabled: false         # benchmark trains the fixed 15-layer depth directly
+
+runtime:
+  device: cuda
+  devices: 1             # overridden by the job (--devices 1 | --devices 4)
+  num_nodes: 1
+  strategy: auto         # overridden with ddp by the 4-GPU jobs
+  num_workers: 8         # = cpus-per-task on an A100 eighth-node
+  seed: 0
+  enable_progress_bar: false
+  log_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/benchmarks/runs
+  run_name: null         # set by benchmark_training.py from its --label
+  resume_from: null
+
+wandb:
+  enabled: false         # CSV-only; benchmark runs are throwaway
+  offline: true
+  project: radio_reconstruction_tools
+  entity: null
+  name: null

@@ -1,0 +1,87 @@
+# Smoke-test config: unrolled net, DRUNet prior, finufft forward operator.
+# Tiny dataset / few epochs to validate the GPU training pipeline end to end
+# before launching a full run. Run via the matching job script in ../jobs/.
+# `runtime.log_dir` is overridden by the job with a timestamped output directory.
+
+model:
+  type: unrolled         # NUFFT data-fidelity gradient A^H(y - A x)
+  nlayers: 10
+  alpha_mode: conv       # image-size-independent learned gradient step
+  beta_mode: DRUNet      # pretrained DRUNet denoiser as the per-layer prox
+  train_denoiser: false  # freeze DRUNet weights, learn only the per-layer noise level
+  weighted_loss: true    # supervise every layer (later layers weighted more)
+
+optim:
+  lr: 0.005
+  lr_step_size: 50
+  lr_gamma: 0.5
+  epochs: 2              # smoke test: just exercise train + val + checkpointing
+  batch_size: 2
+  accumulate_grad_batches: 1
+  effective_batch_size: null
+
+data:
+  # Small symlink subset of the TNG50 ungridded dataset (32 images). The full
+  # dataset (13400 images) lives at
+  # /lustre/fswork/projects/rech/uem/commun/datasets/ungridded_dataset/ and is
+  # loaded in full by load_image_dataset, so use the subset for the smoke test.
+  data_path: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/datasets/ungridded_subset_smoketest_32
+  img_size: 64
+  n_train: 16
+  n_val: 4
+  val_fraction: 0.2
+  augment: true
+  # Shared smoke-test experiment condition. The FIRST smoke job to run creates
+  # uv_bank.pt / splits.json / op_norms.pt here (submit_smoketests.sh submits
+  # this finufft V100 job as the creator); every other smoke job (tkbn, psf,
+  # a100/h100, multi-GPU) reuses them, so all backends/machines exercise the
+  # identical condition. A different backend only recomputes the derived caches
+  # (warning, not an error) — the pinned uv/img_size/seed params above/below
+  # must NOT change without pointing at a fresh directory.
+  artifacts_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/artifacts/smoketest_64px_cov4_ntrain16
+
+operator:
+  name: finufft          # pytorch_finufft NUFFT forward model (default backend)
+  kwargs: {}
+
+uv:
+  n_coverages: 4
+  obs_length_h: 0.2      # short observation -> few visibilities (fast smoke test)
+  time_delta_s: 600.0
+  super_resolution: 1.5  # longest baseline lands at pi/super_resolution on the grid
+  imaging_weights: briggs  # Briggs/robust weighting folded into the operator (part of the trained physics; evaluate with the same setting)
+
+noise:
+  add: true
+  min: 10
+  max: 40
+
+# --- Sequential / greedy layer-wise training -------------------------------
+# Train progressively deeper nets (depths start_layers..model.nlayers), each
+# warm-started from the previous stage; every stage saved under its own
+# sub-directory and the schedule auto-resumes. The smoke test only validates the
+# machinery, so it skips ahead to depth 8 -> 3 quick stages (8 -> 9 -> 10:
+# one trained from scratch + two warm-started). For a production run set
+# start_layers: 2 to greedily ramp from depth 2.
+sequential:
+  enabled: true
+  start_layers: 8
+
+runtime:
+  device: cuda
+  devices: 1
+  num_nodes: 1
+  strategy: auto
+  num_workers: 8
+  seed: 0
+  enable_progress_bar: false
+  log_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/trained_models
+  run_name: unrolled_n10_prior_DRUNet_op_finufft
+  resume_from: null
+
+wandb:
+  enabled: true
+  offline: true          # no internet on compute nodes; `wandb sync` afterwards
+  project: radio_reconstruction_tools
+  entity: null
+  name: null

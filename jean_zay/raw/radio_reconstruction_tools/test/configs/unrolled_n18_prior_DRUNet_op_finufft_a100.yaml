@@ -1,0 +1,80 @@
+# Production config: unrolled_n18_prior_DRUNet_op_finufft (A100).
+# 18-layer unrolled net, DRUNet prior, greedy sequential training depth 2 -> 18.
+# Full TNG50 dataset; only n_train + n_val + n_test images are read from the
+# directory (load is capped, no need to pre-subset). Runs under the A100 20h QoS
+# with automatic resubmission (see the matching job in ../jobs/): each relaunch
+# resumes from the last checkpoint.
+
+model:
+  type: unrolled
+  nlayers: 18
+  alpha_mode: conv
+  beta_mode: DRUNet
+  train_denoiser: false
+  weighted_loss: true
+
+optim:
+  lr: 0.005
+  lr_step_size: 50
+  lr_gamma: 0.5
+  epochs: 100            # epochs PER sequential stage
+  batch_size: 64
+  accumulate_grad_batches: 1
+  effective_batch_size: null
+
+data:
+  data_path: /lustre/fswork/projects/rech/uem/commun/datasets/ungridded_dataset
+  img_size: 64
+  n_train: 4000
+  n_val: 500
+  n_test: 500            # disjoint, held out (reserved for evaluation, not trained on)
+  val_fraction: 0.2      # fallback only (ignored because n_val is set)
+  augment: true
+  # Pinned experiment condition SHARED by the whole n18 model-comparison
+  # campaign (finufft / tkbn / psf configs): the first n18 run creates
+  # uv_bank.pt / splits.json / op_norms.pt here and every other n18 run reuses
+  # them, so all models train on exactly the same coverages and images. A
+  # different backend only recomputes the derived caches (warning, not an
+  # error). Do not change the pinned uv/img_size/seed params without pointing
+  # at a fresh directory.
+  artifacts_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/artifacts/tng50_64px_cov16_ntrain4000
+
+operator:
+  name: finufft
+  kwargs: {}
+
+# UV-coverage simulation taken from scripts/configs/unrolled_cluster.yaml
+uv:
+  n_coverages: 16
+  obs_length_h: 1.0
+  time_delta_s: 300.0
+  super_resolution: 1.5  # longest baseline lands at pi/super_resolution on the grid
+  imaging_weights: briggs  # Briggs/robust weighting folded into the operator (part of the trained physics; evaluate with the same setting)
+
+noise:
+  add: true
+  min: 10
+  max: 40
+
+sequential:
+  enabled: true
+  start_layers: 2
+
+runtime:
+  device: cuda
+  devices: 1
+  num_nodes: 1
+  strategy: auto
+  num_workers: 8         # = cpus-per-task on an A100 quarter-node (64/8)
+  seed: 0
+  enable_progress_bar: false
+  log_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/trained_models
+  run_name: null         # overridden by the job with a stable per-chain RUN_ID
+  resume_from: null
+
+wandb:
+  enabled: true
+  offline: true
+  project: radio_reconstruction_tools
+  entity: null
+  name: null

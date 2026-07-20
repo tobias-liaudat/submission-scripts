@@ -1,0 +1,80 @@
+# Checkerboard-fix verification config: PSF unrolled net, PRETRAINED DRUNet prior.
+# Same tiny/fast setup as the PSF smoke test, but with a held-out test split
+# (n_test) so scripts/validation/validate_unrolled.py can render the
+# reconstruction panel. Use this to confirm end-to-end (on a GPU compute node,
+# offline) that:
+#   1. the pretrained DRUNet loads from the torch-hub cache (run
+#      scripts/prefetch_drunet.py on a login node FIRST), and
+#   2. the trained reconstructions are free of the checkerboard grid that the
+#      old random-frozen denoiser produced.
+# Self-contained: it builds its OWN pinned condition in a fresh artifacts_dir.
+
+model:
+  type: unrolled_psf     # PSF normal-operator gradient (dirty - A^H A x), batched FFT
+  nlayers: 10
+  alpha_mode: conv       # image-size-independent learned gradient step
+  beta_mode: DRUNet      # PRETRAINED DRUNet denoiser as the per-layer prox
+  train_denoiser: false  # freeze DRUNet weights, learn only the per-layer noise level
+  path_denoiser: null    # null -> deepinv pretrained gray DRUNet (prefetch it first)
+  weighted_loss: true    # supervise every layer (later layers weighted more)
+
+optim:
+  lr: 0.005
+  lr_step_size: 50
+  lr_gamma: 0.5
+  epochs: 8              # a few epochs so the trained recon is meaningful (still fast)
+  batch_size: 2
+  accumulate_grad_batches: 1
+  effective_batch_size: null
+
+data:
+  # Small symlink subset of the TNG50 ungridded dataset (32 images).
+  data_path: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/datasets/ungridded_subset_smoketest_32
+  img_size: 64
+  n_train: 16
+  n_val: 4
+  n_test: 8              # held out for the validation panel (16+4+8 = 28 <= 32)
+  val_fraction: 0.2
+  augment: true
+  # Fresh pinned condition (own dir): the existing smoketest dir has n_test=0
+  # baked into splits.json and would be reused as-is, so this needs its own dir.
+  artifacts_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/artifacts/smoketest_64px_cov4_ntrain16_ntest8
+
+operator:
+  name: finufft          # simulates visibilities + dirty image for the PSF model
+  kwargs: {}
+
+uv:
+  n_coverages: 4
+  obs_length_h: 0.2      # short observation -> few visibilities (fast smoke test)
+  time_delta_s: 600.0
+  super_resolution: 1.5  # longest baseline lands at pi/super_resolution on the grid
+  imaging_weights: briggs  # Briggs/robust weighting folded into the operator
+
+noise:
+  add: true
+  min: 10
+  max: 40
+
+sequential:
+  enabled: true
+  start_layers: 8        # depths 8 -> 9 -> 10 (one from scratch + two warm-started)
+
+runtime:
+  device: cuda
+  devices: 1
+  num_nodes: 1
+  strategy: auto
+  num_workers: 8
+  seed: 0
+  enable_progress_bar: false
+  log_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/trained_models
+  run_name: unrolled_psf_n10_prior_DRUNet_op_finufft_checkfix
+  resume_from: null
+
+wandb:
+  enabled: false         # verification run: local CSV only
+  offline: true
+  project: radio_reconstruction_tools
+  entity: null
+  name: null

@@ -24,7 +24,7 @@ JOBS_DIR=/lustre/fswork/projects/rech/ney/ulx23va/projects/radio/repos/submissio
 
 BUILDER=$JOBS_DIR/build_artifacts_large_img360_a100.sh
 CHAINS=(
-    "$JOBS_DIR/large_run_img360_unrolled_n15_prior_DRUNet_PSF_finufft_4gpus_a100.sh"
+    "$JOBS_DIR/large_run_img360_unrolled_n15_prior_DRUNet_PSF_finufft_4gpus_h100.sh"
 )
 
 builder_id=$(sbatch --parsable "$BUILDER")

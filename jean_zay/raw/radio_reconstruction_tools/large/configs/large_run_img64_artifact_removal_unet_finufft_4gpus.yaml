@@ -1,0 +1,79 @@
+# Baseline config: img64 artifact-removal (UNet), 4-GPU DDP.
+# Non-unrolled comparison point for the unrolled runs: a single feed-forward
+# UNet maps the dirty image A^H y (formed with the finufft adapter, Briggs
+# weighting, and divided by the operator norm) to a clean reconstruction
+# (deepinv ArtifactRemoval). Single network -> NO greedy schedule.
+#
+# It deliberately REUSES the same pinned condition as the img64 unrolled_psf
+# run (same artifacts_dir), so it trains on exactly the same coverages / image
+# splits -> an apples-to-apples comparison. The finufft/Briggs op-norm cache is
+# shared (no recompute); the psf_bank in that dir is simply unused here.
+
+model:
+  type: artifact_removal   # dirty image -> CNN -> reconstruction (deepinv ArtifactRemoval)
+  backbone: unet           # CNN backbone (only 'unet' supported so far)
+  input_scaling: op_norm   # scale the dirty image before the CNN: op_norm | max | none
+  # unet_scales: null      # UNet depth (down/up levels); null -> chosen from img_size
+  # unet_channels: null    # UNet base channels per scale; null -> deepinv default
+
+optim:
+  lr: 0.002
+  lr_step_size: 100        # single run (not per-stage): decay once at epoch 100
+  lr_gamma: 0.5
+  epochs: 300              # single network trains to convergence in one run
+  batch_size: 8
+  accumulate_grad_batches: 1
+  effective_batch_size: 64
+
+data:
+  data_path: /lustre/fswork/projects/rech/uem/commun/datasets/ungridded_dataset
+  img_size: 64
+  n_train: 4000
+  n_val: 500
+  n_test: 500              # disjoint hold-out for the comparison (validate_unrolled.py)
+  val_fraction: 0.2
+  augment: true
+  # SHARED with the img64 unrolled_psf run so the comparison is on the identical
+  # condition (same UV bank, image splits, finufft/Briggs op-norms). Pre-built
+  # by the large-run builder job; artifact removal needs op_norms (not psf_bank).
+  artifacts_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/artifacts/large_img64_cov1000_ntrain4000_psf_finufft
+
+operator:
+  name: finufft            # forms the dirty image A^H y (matches the shared condition)
+  kwargs: {}
+
+uv:
+  n_coverages: 1000
+  obs_length_h: 1.0
+  time_delta_s: 300.0
+  super_resolution: 1.5
+  dec_range: [-45.0, 0.0]
+  ha_range: [-4.0, 0.0]
+  imaging_weights: briggs
+
+noise:
+  add: true
+  min: 10
+  max: 40
+
+sequential:
+  enabled: false           # single network — the greedy schedule does not apply
+
+runtime:
+  device: cuda
+  devices: 4
+  num_nodes: 1
+  strategy: ddp            # explicit DDP; job must set ntasks-per-node=4
+  num_workers: 8
+  seed: 0
+  enable_progress_bar: false
+  log_dir: /lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/trained_models
+  run_name: null           # set by the job
+  resume_from: null        # single job; if it hits the wall-time, relaunch with --resume-from <last.ckpt>
+
+wandb:
+  enabled: true
+  offline: true
+  project: radio_reconstruction_tools
+  entity: null
+  name: null

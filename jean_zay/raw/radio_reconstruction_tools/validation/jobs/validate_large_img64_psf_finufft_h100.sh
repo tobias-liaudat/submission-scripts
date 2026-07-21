@@ -23,7 +23,7 @@ set -x
 
 CODE_REPO=/lustre/fswork/projects/rech/ney/ulx23va/projects/radio/repos/radio_reconstruction_tools
 SUBMISSION_REPO=/lustre/fswork/projects/rech/ney/ulx23va/projects/radio/repos/submission-scripts
-RUN_DIR=/lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/trained_models/large_run_img64_unrolled_n15_prior_DRUNet_PSF_finufft_4gpus_20260717_190728_20260717_190854
+RUN_DIR=/lustre/fswork/projects/rech/ney/ulx23va/projects/radio/outputs/trained_models/large_run_img64_unrolled_n15_prior_DRUNet_PSF_finufft_4gpus_20260720_211031_20260720_211214
 
 # --- Environment (H100: arch/h100 pre-module before pytorch) ---------------
 . $SUBMISSION_REPO/jean_zay/env_configs/radio_reconstruction_tools_h100.sh

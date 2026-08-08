@@ -1,0 +1,147 @@
+# 64^2 campaign: the transform ladder, the kappa sweep and M4's controls.
+#
+# 64^2 is the screening resolution (plan D7). Everything that decides *which*
+# family and *which* kappa is settled here; 360^2 confirms the survivors.
+#
+# Both reconstructors run every arm. That is the point: the geometric families
+# were measured to hurt on the artifact-removal nets, and the mechanism traced
+# for it -- the group action relocating a frame-anchored hallucination onto
+# pixels the reconstruction got right (changelog M19) -- predicts they should
+# hurt *less* on a network with a data-consistency step. Running one family
+# without the other cannot test that.
+
+img_size: 64
+families: [artifact_removal, unrolled]
+seeds: [1, 2, 3]
+out_dir: outputs/campaign64
+
+defaults:
+  MC: 100
+  # One bootstrap covers both: RCPS is fitted on the first n_calib rows and the
+  # post-calibration curve evaluated on the remaining n_test.
+  n_calib: 24
+  n_test: 24
+  batch_size: 8
+  super_resolution: 1.5
+  # Nominal levels for the coverage curve. All nine come out of one set of MC
+  # draws -- they differ only in which quantile is taken.
+  levels: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  # The level `rho_masked` and `width_masked` are computed at.
+  primary_level: 0.9
+  num_alphas: 100
+  tarp_bins: null # -> max(N, 100)
+  psnr_tolerance_db: 3.0
+  calibration:
+    error: 0.1
+    dl: 0.05
+    lmax: 5.0
+    bound: null # -> the tightest valid bound per statistic
+
+# The kappa the ladder's conditioned families run at. Swept separately below;
+# until that sweep lands this is the plan's stated prior (2-3, §6).
+_kappa: &kappa 2.0
+
+# Cutoff ranges in cycles per image, from dev/scripts/shelving_filter_tuning.py.
+# The two must not overlap or a draw could close them over each other.
+_highpass: &highpass [1.13, 2.56]
+_lowpass: &lowpass [2.56, 10.32]
+
+arms:
+  # ---- the cumulative ladder ------------------------------------------------
+  # Geometry first (it is the published action), then the spectral families the
+  # mechanism favours. An arm is the union of everything above it.
+  L0_identity: [] # the standard bootstrap; the reference for everything
+  L1_geometry:
+    - {name: rot90, p: 0.5}
+    - {name: reflect, p: 0.5}
+    - {name: shift, p: 0.5, max_pixels: 2}
+  L2_highpass:
+    - {name: rot90, p: 0.5}
+    - {name: reflect, p: 0.5}
+    - {name: shift, p: 0.5, max_pixels: 2}
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+  L3_lowpass:
+    - {name: rot90, p: 0.5}
+    - {name: reflect, p: 0.5}
+    - {name: shift, p: 0.5, max_pixels: 2}
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
+  L4_radial_tilt:
+    - {name: rot90, p: 0.5}
+    - {name: reflect, p: 0.5}
+    - {name: shift, p: 0.5, max_pixels: 2}
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
+    - {name: radial_tilt, p: 0.5, kappa: *kappa}
+  L5_full:
+    - {name: rot90, p: 0.5}
+    - {name: reflect, p: 0.5}
+    - {name: shift, p: 0.5, max_pixels: 2}
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
+    - {name: radial_tilt, p: 0.5, kappa: *kappa}
+    - {name: gap, p: 0.5, kappa: 1.5}
+
+  # ---- the spectral-only ladder ---------------------------------------------
+  # Same families, no geometry. The pair separates "spectral helps" from
+  # "spectral rescues geometry", which the cumulative ladder alone cannot.
+  S1_highpass:
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+  S2_lowpass:
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
+  S3_radial_tilt:
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
+    - {name: radial_tilt, p: 0.5, kappa: *kappa}
+  S4_gap:
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
+    - {name: radial_tilt, p: 0.5, kappa: *kappa}
+    - {name: gap, p: 0.5, kappa: 1.5}
+
+  # ---- M2: the kappa sweep --------------------------------------------------
+  # Each conditioned family alone, across the kappa grid, all against L0. The
+  # reference is `identity`, not geometry-only: the geometric action was
+  # measured not to beat identity, so calling it the baseline would grade the
+  # shelves against something already known to be worse than nothing.
+  # Kill criterion: if no kappa beats L0_identity on the primary metric, the
+  # conditioned families go too. That is a legitimate outcome.
+  K_hp_1.5: [{name: highpass, p: 1.0, cutoff_range: *highpass, kappa: 1.5}]
+  K_hp_2: [{name: highpass, p: 1.0, cutoff_range: *highpass, kappa: 2.0}]
+  K_hp_3: [{name: highpass, p: 1.0, cutoff_range: *highpass, kappa: 3.0}]
+  K_hp_5: [{name: highpass, p: 1.0, cutoff_range: *highpass, kappa: 5.0}]
+  K_hp_10: [{name: highpass, p: 1.0, cutoff_range: *highpass, kappa: 10.0}]
+
+  K_lp_1.5: [{name: lowpass, p: 1.0, cutoff_range: *lowpass, kappa: 1.5}]
+  K_lp_2: [{name: lowpass, p: 1.0, cutoff_range: *lowpass, kappa: 2.0}]
+  K_lp_3: [{name: lowpass, p: 1.0, cutoff_range: *lowpass, kappa: 3.0}]
+  K_lp_5: [{name: lowpass, p: 1.0, cutoff_range: *lowpass, kappa: 5.0}]
+  K_lp_10: [{name: lowpass, p: 1.0, cutoff_range: *lowpass, kappa: 10.0}]
+
+  # The tilt realizes its kappa exactly, unlike the shelves (whose high-pass
+  # never reaches its floor at these cutoffs: realized 2.4 for a requested 10).
+  # So this row is the one that actually samples the conditioning axis.
+  K_tilt_1.5: [{name: radial_tilt, p: 1.0, kappa: 1.5}]
+  K_tilt_2: [{name: radial_tilt, p: 1.0, kappa: 2.0}]
+  K_tilt_3: [{name: radial_tilt, p: 1.0, kappa: 3.0}]
+  K_tilt_5: [{name: radial_tilt, p: 1.0, kappa: 5.0}]
+  K_tilt_10: [{name: radial_tilt, p: 1.0, kappa: 10.0}]
+
+  K_gap_1.25: [{name: gap, p: 1.0, kappa: 1.25}]
+  K_gap_1.5: [{name: gap, p: 1.0, kappa: 1.5}]
+  K_gap_2: [{name: gap, p: 1.0, kappa: 2.0}]
+  K_gap_3: [{name: gap, p: 1.0, kappa: 3.0}]
+
+  # ---- M4: the gap controls -------------------------------------------------
+  # The gate is "beats BOTH controls". Without them, a gap result says only that
+  # a random multiplicative texture perturbs the reconstruction.
+  C_gap_random: [{name: gap_random, p: 1.0, kappa: 1.5}]
+  C_gap_rotated: [{name: gap_rotated, p: 1.0, kappa: 1.5}]
+
+  # ---- per-family singletons ------------------------------------------------
+  # The decomposition that found every geometric family degrading on its own.
+  # Cheap, and it is what attributes a ladder change to a specific family.
+  F_rot90: [{name: rot90, p: 1.0}]
+  F_reflect: [{name: reflect, p: 1.0}]
+  F_shift: [{name: shift, p: 1.0, max_pixels: 2}]

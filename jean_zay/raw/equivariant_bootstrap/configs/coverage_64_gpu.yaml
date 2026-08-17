@@ -1,0 +1,118 @@
+# Raw bootstrap coverage at 64^2, GPU. NO conformalisation.
+#
+# Successor to the local probe (plan/preliminary_results/2026-08-17_raw_coverage_64.md),
+# which ran at MC=32 on 12 images and produced two findings that this run exists to
+# either confirm or destroy:
+#
+#   * The parametric bootstrap under-covers: 0.666 at nominal 0.9, source-masked.
+#   * `gap` at kappa=1.5 roughly HALVES the miscalibration -- mean |deviation from
+#     the diagonal| 0.056 against the parametric arm's 0.109 -- and is the only arm
+#     whose curve crosses the diagonal rather than sitting one-sided.
+#
+# Why those are not yet trustworthy
+# ---------------------------------
+# The 0.9-quantile of 32 draws is a DOWNWARD-BIASED estimator of the population
+# quantile. That bias pushes coverage down for every arm, so an unknown part of the
+# measured under-coverage is a sampling artifact rather than a property of the
+# method. And since the winning kappa is whatever inflates the interval back to the
+# right size, **the apparent optimum kappa is contaminated by the same bias** --
+# raise MC and it should fall. At MC=32 we cannot tell "kappa=1.5 corrects a real
+# deficiency" from "kappa=1.5 compensates for too few draws".
+#
+# MC=256 is therefore the single most important change here, not the image count.
+#
+# Run the MC ladder FIRST (see the README) -- it is cheap and it decides how to read
+# everything else.
+
+img_size: 64
+families: [unrolled]
+seeds: [1, 2, 3]
+out_dir: outputs/coverage_64_gpu
+
+defaults:
+  # The point of the run. At MC=256 the 0.9-quantile bias is roughly 8x smaller
+  # than at 32.
+  MC: 256
+  n_calib: 0
+  n_test: 100
+  # 64^2 on a GPU: raise until memory complains. The bootstrap holds (MC, B, H, W)
+  # only when sample_consumers are attached; otherwise this is just the forward
+  # batch. Confirm with --dry-run on the node.
+  batch_size: 32
+  super_resolution: 1.5
+  levels: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  primary_level: 0.9
+  num_alphas: 100
+  # 100 references, so the TARP ECP has resolution 1/100 and is worth reading here
+  # (it was not at 12 images).
+  tarp_bins: 100
+  psnr_tolerance_db: 3.0
+  calibration: null
+
+_hp: &hp [1.13, 2.56]
+_lp: &lp [2.56, 10.32]
+
+arms:
+  # -- reference -------------------------------------------------------------
+  P0_parametric: []
+
+  # -- mechanism set, unchanged from the local probe so the two are comparable --
+  # kappa = 1 throughout: exact permutations, no inverse amplification.
+  G_rot90:
+    - {name: rot90, p: 1.0}
+  G_reflect:
+    - {name: reflect, p: 1.0, p_axis: 0.5}
+  G_shift:
+    - {name: shift, p: 1.0, max_pixels: 2}
+  G_mixture:
+    - {name: rot90, p: 0.5}
+    - {name: reflect, p: 0.5}
+    - {name: shift, p: 0.5, max_pixels: 2}
+
+  # -- the incumbent CARB families, as the conditioned reference ---------------
+  S_shelves:
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: 2.0}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: 2.0}
+  S_tilt:
+    - {name: radial_tilt, p: 1.0, kappa: 2.0}
+
+  # -- THE KAPPA SWEEP, inside one family --------------------------------------
+  # The local probe found calibration quality ordered by kappa across families,
+  # but kappa and family type were confounded there: every kappa=1 arm was
+  # geometric and every kappa>1 arm was not. Sweeping kappa *within* `gap` breaks
+  # that. If mean |deviation| tracks kappa here, it is kappa; if it does not, it
+  # is something about the family.
+  #
+  # Bracketed around the local optimum (1.5) on both sides, with 1.1 close enough
+  # to the identity to show what a near-unconditioned mover does.
+  K_gap_1.10:
+    - {name: gap, p: 1.0, kappa: 1.10}
+  K_gap_1.25:
+    - {name: gap, p: 1.0, kappa: 1.25}
+  K_gap_1.50:
+    - {name: gap, p: 1.0, kappa: 1.50}
+  K_gap_2.00:
+    - {name: gap, p: 1.0, kappa: 2.00}
+
+  # -- M4's controls, at the local optimum --------------------------------------
+  # The local probe found gap ~ gap_random ~ gap_rotated on every metric, i.e. the
+  # targeting does nothing and the M4 gate fails. Repeat at proper statistics
+  # before dropping the selector: this also bears on O5, since a transposed uv
+  # axis would explain gap ~ gap_rotated but NOT gap ~ gap_random.
+  C_gap_random_1.50:
+    - {name: gap_random, p: 1.0, kappa: 1.50}
+  C_gap_rotated_1.50:
+    - {name: gap_rotated, p: 1.0, kappa: 1.50}
+
+  # -- the shipped-style mixture ------------------------------------------------
+  # Everything at p=0.5. kappa COMPOUNDS: measured composite mean 3.94, median
+  # 3.00, max 11.43 at these settings. Kept as the "what a config would actually
+  # do" arm, not as a candidate.
+  ALL_transforms:
+    - {name: rot90, p: 0.5}
+    - {name: reflect, p: 0.5}
+    - {name: shift, p: 0.5, max_pixels: 2}
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: 2.0}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: 2.0}
+    - {name: radial_tilt, p: 0.5, kappa: 2.0}
+    - {name: gap, p: 0.5, kappa: 1.5}

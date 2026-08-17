@@ -4,16 +4,39 @@ Jean Zay jobs for the `UQsuite` equivariant-bootstrap transform programme: which
 action produces uncertainty maps whose shape tracks the true reconstruction error.
 
 ```text
-configs/campaign_64.yaml    the 64^2 screen  — ladder + kappa sweep + M4 controls (34 arms)
-configs/campaign_360.yaml   the 360^2 confirmation — ladder only (8 arms)
-jobs/prepare_cluster.sh     login-node preflight. RUN FIRST.
-jobs/submit_all.sh          submits the four jobs in order
-jobs/level_b.sh             ~10 min. Read this before spending on the rest.
-jobs/campaign_64.sh         the screen, self-chaining
-jobs/campaign_360_ar.sh     confirmation, artifact-removal
-jobs/campaign_360_unrolled.sh   confirmation, PSF-unrolled (the expensive one)
-jobs/_common.sh             shared env, paths and chaining helpers (sourced)
+configs/coverage_64_gpu.yaml  RAW coverage, no conformalisation (14 arms x 3 seeds)
+configs/campaign_64.yaml      the 64^2 screen — ladder + kappa sweep + M4 controls
+configs/campaign_360.yaml     the 360^2 confirmation — ladder only (8 arms)
+jobs/prepare_cluster.sh       login-node preflight. RUN FIRST.
+jobs/mc_ladder_64.sh          ~1 h. Run before coverage_64_gpu; it decides how to read it.
+jobs/coverage_64_gpu.sh       raw-coverage sweep, self-chaining
+jobs/submit_all.sh            submits the campaign jobs in order
+jobs/level_b.sh               ~10 min. Read this before spending on the rest.
+jobs/campaign_64.sh           the screen, self-chaining
+jobs/campaign_360_ar.sh       confirmation, artifact-removal
+jobs/campaign_360_unrolled.sh confirmation, PSF-unrolled (the expensive one)
+jobs/_common.sh               shared env, paths and chaining helpers (sourced)
 ```
+
+## The raw-coverage line of work (current)
+
+`plan/preliminary_results/2026-08-17_raw_coverage_64.md` reports the local probe this
+supersedes. Two findings need confirming at proper statistics:
+
+- the parametric bootstrap under-covers (0.666 at nominal 0.9, source-masked);
+- `gap` at κ=1.5 roughly **halves** the miscalibration (mean |deviation| 0.056 vs 0.109).
+
+Both are suspect at MC=32, because the q-quantile of 32 draws is downward-biased — which
+lowers coverage for every arm *and* inflates the apparent optimum κ, since κ is doing the
+job of widening the interval back to the right size.
+
+```bash
+sbatch mc_ladder_64.sh        # FIRST: is the under-coverage real or an MC artifact?
+sbatch coverage_64_gpu.sh     # then the sweep, incl. kappa INSIDE one family
+```
+
+Read `mc_ladder_64` before `coverage_64_gpu`. If the parametric arm's coverage climbs with
+MC and plateaus, the plateau is the real value and the optimum κ should fall toward 1.
 
 Environment comes from `../../env_configs/equivariant_bootstrap{,_a100,_h100}.sh`.
 Code lives in `$RADIO_ROOT/repos/UQsuite`; these scripts only supply configuration.

@@ -135,7 +135,8 @@ step "5. dry runs -- measured cost on this hardware"
 # The recorded anchors are laptop CPU numbers and do not transfer. This prints
 # the real per-draw cost and the projected hours per arm-seed, which is what the
 # wall-times in the job scripts should be checked against.
-for config in "$CAMPAIGN_DIR/configs/campaign_64.yaml" \
+for config in "$CAMPAIGN_DIR/configs/coverage_64_gpu.yaml" \
+              "$CAMPAIGN_DIR/configs/campaign_64.yaml" \
               "$CAMPAIGN_DIR/configs/campaign_360.yaml"; do
     echo "   --- $(basename "$config")"
     python scripts/uq_campaign.py -c "$config" --dry-run --device cpu --allow-cpu \
@@ -155,6 +156,8 @@ cat <<EOF
    All checks passed. Submit in this order (or run ./submit_all.sh):
 
      cd $CAMPAIGN_DIR/jobs
+     sbatch mc_ladder_64.sh            # ~1 h; decides how to read coverage_64_gpu
+     sbatch coverage_64_gpu.sh         # raw coverage, no conformalisation
      sbatch level_b.sh                 # minutes; run and READ this first
      sbatch campaign_64.sh             # the screen: which family, which kappa
      sbatch campaign_360_ar.sh         # confirmation, cheap reconstructor

@@ -23,6 +23,26 @@
 #
 # Run the MC ladder FIRST (see the README) -- it is cheap and it decides how to read
 # everything else.
+#
+# What changed on 2026-08-18
+# --------------------------
+# The gap selector was pooling the batch and ranking cells on ABSOLUTE density,
+# which put every candidate in a thin annulus at 86-93 % of the band limit inside
+# a 38-degree wedge (changelog D34). At this config's batch_size that is where the
+# `gap` arms would have landed, so `gap`, `gap_random` and `gap_rotated` would all
+# have perturbed the same sparse region -- which is very likely what made the M4
+# gate come back null in the local probe, and would have made it come back null
+# again here at 8x the statistics.
+#
+# The selector now grids each image's own coverage and ranks on density relative
+# to the same radius ring. `C_gap_pooled_1.50` runs the superseded selector as an
+# explicit before/after arm; it is the only place `gap_pooled` should ever appear.
+#
+# Also new: the two families plan 5.2 specified and nobody had built -- the
+# elliptical tilt (with its two orientation controls) and the Briggs-inspired
+# tilt. Until briggs_tilt existed, 5.2's own M3 gate -- "prefer the radial tilt
+# unless Briggs beats it at matched realized kappa" -- could not be evaluated at
+# all; the radial tilt was running unopposed.
 
 img_size: 64
 families: [unrolled]
@@ -76,6 +96,26 @@ arms:
   S_tilt:
     - {name: radial_tilt, p: 1.0, kappa: 2.0}
 
+  # -- the anisotropic tilt and its two orientation controls -------------------
+  # All three realize kappa=2.0 exactly and are matched in ellipticity, so they
+  # differ in ORIENTATION alone -- which is what makes the comparison mean
+  # anything. The measured axis ratio on this bank is 1.52 (median over 12
+  # coverages, outer-annulus moment), so there is a real anisotropy to aim at.
+  # If `aligned` does not beat both controls, the anisotropy is not what helps.
+  S_elliptical:
+    - {name: elliptical_tilt, p: 1.0, kappa: 2.0}
+  C_elliptical_rotated:
+    - {name: elliptical_tilt_rotated, p: 1.0, kappa: 2.0}
+  C_elliptical_random:
+    - {name: elliptical_tilt_random, p: 1.0, kappa: 2.0}
+
+  # -- Briggs, so M3's exit gate becomes decidable ------------------------------
+  # Matched realized kappa against S_tilt: the gate is "prefer the radial tilt
+  # unless Briggs beats it", and with briggs_tilt unbuilt the tilt was winning by
+  # default rather than on merit.
+  S_briggs:
+    - {name: briggs_tilt, p: 1.0, kappa: 2.0}
+
   # -- THE KAPPA SWEEP, inside one family --------------------------------------
   # The local probe found calibration quality ordered by kappa across families,
   # but kappa and family type were confounded there: every kappa=1 arm was
@@ -95,14 +135,29 @@ arms:
     - {name: gap, p: 1.0, kappa: 2.00}
 
   # -- M4's controls, at the local optimum --------------------------------------
-  # The local probe found gap ~ gap_random ~ gap_rotated on every metric, i.e. the
-  # targeting does nothing and the M4 gate fails. Repeat at proper statistics
-  # before dropping the selector: this also bears on O5, since a transposed uv
-  # axis would explain gap ~ gap_rotated but NOT gap ~ gap_random.
+  # The local probe found gap ~ gap_random ~ gap_rotated on every metric. Under
+  # the superseded selector that is not evidence about targeting: all three arms
+  # were modulating in the same near-band-edge annulus, where the coverage is thin
+  # in every direction, so there was nothing for the targeting to be better than.
+  # Under the fixed selector the controls have teeth -- at the radii where the
+  # holes actually are, only 10-22 % of half-plane cells are empty, so a random
+  # direction lands on a FILLED cell most of the time.
+  #
+  # This also bears on O5: a transposed uv axis would explain gap ~ gap_rotated
+  # but NOT gap ~ gap_random, so the two controls together separate a code bug
+  # from a real null result.
   C_gap_random_1.50:
     - {name: gap_random, p: 1.0, kappa: 1.50}
   C_gap_rotated_1.50:
     - {name: gap_rotated, p: 1.0, kappa: 1.50}
+
+  # -- the superseded selector, as an explicit before/after --------------------
+  # The ONLY config that should ever name `gap_pooled`. Paired with K_gap_1.50 it
+  # measures what the fix was worth, on the same images and the same seeds. If the
+  # two arms score alike, the selector was never the problem and the M4 null is
+  # real.
+  C_gap_pooled_1.50:
+    - {name: gap_pooled, p: 1.0, kappa: 1.50}
 
   # -- the shipped-style mixture ------------------------------------------------
   # Everything at p=0.5. kappa COMPOUNDS: measured composite mean 3.94, median
@@ -116,3 +171,7 @@ arms:
     - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: 2.0}
     - {name: radial_tilt, p: 0.5, kappa: 2.0}
     - {name: gap, p: 0.5, kappa: 1.5}
+    # Deliberately NOT including elliptical_tilt or briggs_tilt. Both are radial
+    # tilts on a different metric, so stacking them with radial_tilt compounds
+    # kappa without adding a mechanism -- and the composite is already at a
+    # measured median of 3.0 and a maximum of 11.4 without them.

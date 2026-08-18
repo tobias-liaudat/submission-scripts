@@ -4,11 +4,11 @@ Jean Zay jobs for the `UQsuite` equivariant-bootstrap transform programme: which
 action produces uncertainty maps whose shape tracks the true reconstruction error.
 
 ```text
-configs/coverage_64_gpu.yaml  RAW coverage, no conformalisation (14 arms x 3 seeds)
+configs/coverage_64_gpu.yaml  the 64^2 sweep (19 arms x 3 seeds) -- NEEDS REWRITING, see below
 configs/campaign_64.yaml      the 64^2 screen — ladder + kappa sweep + M4 controls
 configs/campaign_360.yaml     the 360^2 confirmation — ladder only (8 arms)
 jobs/prepare_cluster.sh       login-node preflight. RUN FIRST.
-jobs/mc_ladder_64.sh          ~1 h. Run before coverage_64_gpu; it decides how to read it.
+jobs/mc_ladder_64.sh          array of 3. How many draws does W(c) need? RUN FIRST.
 jobs/coverage_64_gpu.sh       raw-coverage sweep, self-chaining
 jobs/submit_all.sh            submits the campaign jobs in order
 jobs/level_b.sh               ~10 min. Read this before spending on the rest.
@@ -18,25 +18,55 @@ jobs/campaign_360_unrolled.sh confirmation, PSF-unrolled (the expensive one)
 jobs/_common.sh               shared env, paths and chaining helpers (sourced)
 ```
 
-## The raw-coverage line of work (current)
+## The current line of work
 
-`plan/preliminary_results/2026-08-17_raw_coverage_64.md` reports the local probe this
-supersedes. Two findings need confirming at proper statistics:
+**The selection criterion is fixed** in `plan/transform_selection_metrics.md`: minimise the
+**calibrated interval width** `W(c)` — the interval width needed to reach coverage `c` once a
+scalar `lambda` has been fitted on a disjoint split — subject to a prior-departure constraint
+and numerical validity. Smallest `J = sum_c w_c W(c)` wins.
 
-- the parametric bootstrap under-covers (0.666 at nominal 0.9, source-masked);
-- `gap` at κ=1.5 roughly **halves** the miscalibration (mean |deviation| 0.056 vs 0.109).
-
-Both are suspect at MC=32, because the q-quantile of 32 draws is downward-biased — which
-lowers coverage for every arm *and* inflates the apparent optimum κ, since κ is doing the
-job of widening the interval back to the right size.
+What that demotes, and why. A scalar can always be fitted to reach nominal coverage, so **raw
+coverage and raw width no longer decide anything** — they are properties of the calibration,
+not of the transform. `rho_masked`, previously the primary metric, is demoted for the same
+reason and is *subsumed*: a well-shaped map is precisely one that needs less inflation to
+reach `c`, which is what `W(c)` measures directly. Realized `kappa` is a constraint and a
+knob, never an objective. All are still reported; none decide.
 
 ```bash
-sbatch mc_ladder_64.sh        # FIRST: is the under-coverage real or an MC artifact?
-sbatch coverage_64_gpu.sh     # then the sweep, incl. kappa INSIDE one family
+sbatch mc_ladder_64.sh        # FIRST: how many draws does W(c) need?
 ```
 
-Read `mc_ladder_64` before `coverage_64_gpu`. If the parametric arm's coverage climbs with
-MC and plateaus, the plateau is the real value and the optimum κ should fall toward 1.
+### Before submitting anything else
+
+- **`coverage_64_gpu.yaml` is not yet updated for this.** It still carries the `gap` arms,
+  which are out of scope pending the prior gate; its `levels` omit `0.95`, so `W(0.95)` cannot
+  be computed; and its `MC` should come from the ladder rather than being assumed. **Run the
+  ladder, then rewrite the config.**
+- The prior-departure gate `D_prior` is **on hold** — defined, not built. Arms are judged
+  against it by inspection, which is what parks the `gap` family. The spectral tilts are kept
+  on judgement, and that judgement is the first thing to point the gate at when it exists.
+
+### Revised 2026-08-18 — the gap selector was broken, and two families were missing
+
+The gap selector pooled the batch and ranked cells on **absolute** uv density, so every
+candidate landed in a thin annulus at 86–93 % of the band limit inside a 38° wedge
+(changelog D34). At this config's `batch_size` that is where the `gap` arms would have
+gone — meaning `gap`, `gap_random` and `gap_rotated` would all have perturbed the same
+sparse region, and the M4 gate would have come back null again at 8× the statistics for
+reasons that have nothing to do with the physics.
+
+Selection is now per image and ranked on density *relative to the same radius ring*.
+`C_gap_pooled_1.50` runs the superseded selector so the fix can be priced on the same
+images and seeds.
+
+Also added: `elliptical_tilt` with its two orientation controls, and `briggs_tilt`. Until
+Briggs existed, plan §5.2's M3 gate — *prefer the radial tilt unless Briggs beats it at
+matched realized κ* — could not be evaluated; the radial tilt was unopposed.
+
+**Sizing changed.** 19 arms × 3 seeds = **57 rows**, 256 MC × 100 images = **1,459,200
+image-draws** (was 42 rows / 1,075,200). At 0.05 s/draw that is 20.3 h — *just over* the
+20 h walltime, so this now certainly needs its successor job. `prepare_cluster.sh` prints
+the measured per-draw cost on the real hardware; use that, not this estimate.
 
 Environment comes from `../../env_configs/equivariant_bootstrap{,_a100,_h100}.sh`.
 Code lives in `$RADIO_ROOT/repos/UQsuite`; these scripts only supply configuration.

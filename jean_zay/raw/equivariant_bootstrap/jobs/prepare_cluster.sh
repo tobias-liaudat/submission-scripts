@@ -129,6 +129,12 @@ python examples/radio/run_bootstrap_rcps.py \
     && ok "radio example ran end to end" \
     || bad "radio example failed; see /tmp/uq_smoke.log"
 
+# The MC ladder is the first thing submitted, and an import error in it would
+# only surface after a scheduler wait. --help exercises the whole import graph.
+python scripts/mc_ladder.py --help >/dev/null 2>&1 \
+    && ok "mc_ladder.py imports" \
+    || bad "mc_ladder.py failed to import -- has the W(c) work been pushed?"
+
 # ---------------------------------------------------------------------------
 step "5. dry runs -- measured cost on this hardware"
 # ---------------------------------------------------------------------------
@@ -156,7 +162,7 @@ cat <<EOF
    All checks passed. Submit in this order (or run ./submit_all.sh):
 
      cd $CAMPAIGN_DIR/jobs
-     sbatch mc_ladder_64.sh            # ~1 h; decides how to read coverage_64_gpu
+     sbatch mc_ladder_64.sh            # array of 3, <2 h each; fixes MC for everything after
      sbatch coverage_64_gpu.sh         # raw coverage, no conformalisation
      sbatch level_b.sh                 # minutes; run and READ this first
      sbatch campaign_64.sh             # the screen: which family, which kappa

@@ -52,10 +52,30 @@
 #     2  S_tilt         radial_tilt kappa = 2, widest map, most draws expected
 # If they disagree on the answer, take the largest.
 #
-# COST. 100 images x 512 draws = 51,200 image-draws per task. At the campaign
-# README's own bracket of 0.02-0.1 s per image-draw on a V100 that is 17-85 min,
-# so each task fits the 2 h dev QoS with room. It is the array that keeps it
-# there: all three arms in one task could exceed 2 h at the pessimistic rate.
+# COST, MEASURED -- the README's 0.02-0.1 s per image-draw bracket is wrong and
+# it cost three timed-out jobs (1099207, 1101322: all three arms killed at 2 h
+# having finished 3 of 7 batches, saving nothing). The real rate on this problem,
+# measured through `draw_samples` itself:
+#
+#     V100  0.24-0.27 s/image-draw      A100  0.21-0.23      H100  0.17-0.20
+#
+# and it barely responds to the usual levers -- batch 16 -> 50 moves the V100 by
+# less than its run-to-run noise, and peak memory is 0.7 GiB of a 32 GiB card.
+# The loop is bound inside the tkbn NUFFT, not by batch parallelism or GPU class,
+# so there is no tuning here: the job has to be sized to the rate.
+#
+# At the original 100 images that is 3.4 h of bootstrap plus ~25 min of setup,
+# saving and CPU-side ladder scoring -- 3.8 h against a 2 h QoS. Hence 32 images:
+# 16,384 image-draws is ~68 min, and with setup and scoring the task lands near
+# 1.4 h, inside the dev cap with room for a slow node.
+#
+# WHAT 32 IMAGES COSTS. The ladder is a WITHIN-arm paired comparison -- every
+# rung reuses the same images, the same noise and the same transform draws -- so
+# a smaller image count inflates the noise on the absolute W far more than on the
+# rung-to-rung movement the plateau is actually read from. Expect `all_valid` to
+# come back False, which per `ladder()`'s own comment does not invalidate the MC
+# curve; it does mean these J values must not be used to rank the arms against
+# each other. For that, rerun at N_IMAGES=100 on qos_gpu-t3 with --time=06:00:00.
 #
 # The draws are kept (~840 MB per arm). That is deliberate, and it has already
 # paid for itself once: the conditional-coverage slope was added to the criterion
@@ -74,7 +94,7 @@ SUBMISSION_REPO=/lustre/fswork/projects/rech/ney/ulx23va/projects/radio/repos/su
 ARMS=(P0_parametric G_mixture S_tilt)
 ARM=${ARMS[${SLURM_ARRAY_TASK_ID:-0}]}
 
-N_IMAGES=${N_IMAGES:-100}
+N_IMAGES=${N_IMAGES:-32}
 MC_MAX=${MC_MAX:-512}
 BATCH_SIZE=${BATCH_SIZE:-16}
 REPEATS=${REPEATS:-5}

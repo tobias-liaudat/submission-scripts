@@ -16,10 +16,17 @@
 #SBATCH -A rbn@v100
 
 # ===========================================================================
-# HOW MANY BOOTSTRAP DRAWS DOES W(c) NEED?
+# HOW MANY BOOTSTRAP DRAWS DO THE SELECTION METRICS NEED?
 #
 # Run this BEFORE any parameter sweep: every sweep inherits the draw count, so
 # it is worth settling once rather than guessing.
+#
+# TWO quantities decide, and they need not settle together. W(c) is a mean over
+# source pixels; the conditional-coverage slope is a *contrast* between two
+# decile means, and contrasts carry more variance, so the slope should settle
+# later. Both are tracked and the recommendation is the larger of the two.
+# Observed on a cached 4-image probe: W(c) already converged at MC=16 while the
+# slope had not.
 #
 # NOTE THE QUESTION CHANGED. The previous version of this job asked whether raw
 # coverage was biased by too few draws. It is -- the q-quantile of MC draws is a
@@ -50,9 +57,11 @@
 # so each task fits the 2 h dev QoS with room. It is the array that keeps it
 # there: all three arms in one task could exceed 2 h at the pessimistic rate.
 #
-# The draws are kept (~840 MB per arm). That is deliberate: the aggregation
-# weights in W(c) are still an open choice, and keeping them means the ladder can
-# be re-scored under a different objective with no GPU at all --
+# The draws are kept (~840 MB per arm). That is deliberate, and it has already
+# paid for itself once: the conditional-coverage slope was added to the criterion
+# after this job was written, and re-scoring the saved draws costs no GPU at all.
+# The aggregation weights in W(c) are still an open choice, so it will likely pay
+# again --
 #     python scripts/mc_ladder.py --from-cache -o <out-dir>
 #
 #   sbatch mc_ladder_64.sh

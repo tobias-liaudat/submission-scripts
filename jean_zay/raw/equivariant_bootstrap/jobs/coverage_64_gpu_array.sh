@@ -37,6 +37,13 @@
 # instead: resubmit the same array and every finished row is skipped, so a
 # wall-time kill costs the rows that were in flight and nothing else.
 #
+# `--skip-existing` skips rows that SUCCEEDED, not rows that left a file. A
+# failed row writes a record carrying `error` and `traceback` to the same path,
+# so keying the resume on existence would skip the failures too and a resubmitted
+# array would report nothing left to do while the gap went unnoticed until
+# someone counted rows at analysis time. Failed rows are retried, and the log
+# says `retry ... (previous attempt failed)` when that happens.
+#
 # BEFORE THE FIRST SUBMISSION run `prepare_cluster.sh` on a login node -- it
 # prefetches DRUNet (compute nodes have no network) and builds the Briggs
 # profile store, without which every briggs row spends ~15 min gridding.

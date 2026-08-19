@@ -118,6 +118,29 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+step "3b. Briggs weight profiles"
+# ---------------------------------------------------------------------------
+# `briggs_tilt` draws its robustness from a 41-point grid, and each distinct
+# value needs its own gridded weight ratio -- about a second apiece against
+# under a millisecond cached (plan/changelog.md D39, M29). Gridding on demand
+# costs a quarter of an hour per campaign row, on the CPU, inside a GPU job.
+#
+# Every row sees the same coverages (same bank, same image order, same
+# batching), so the whole set is a few megabytes computed once, here. A store
+# that later misses -- a changed batch size, a different image count -- makes a
+# job slower, never wrong.
+BRIGGS_IMAGES=${BRIGGS_IMAGES:-100}
+BRIGGS_BATCH=${BRIGGS_BATCH:-32}
+if python "$CODE_REPO/scripts/prefetch_briggs.py" \
+        --img-size 64 --n-images "$BRIGGS_IMAGES" --batch-size "$BRIGGS_BATCH" \
+        >/tmp/uq_briggs.log 2>&1; then
+    ok "$(tail -1 /tmp/uq_briggs.log | sed 's/^ *//')"
+else
+    bad "prefetch_briggs.py failed (see /tmp/uq_briggs.log). Not fatal -- the \
+campaign will grid on demand -- but it costs ~15 min per briggs row."
+fi
+
+# ---------------------------------------------------------------------------
 step "4. test suite and the no-checkpoint example"
 # ---------------------------------------------------------------------------
 python -m pytest tests -q >/tmp/uq_pytest.log 2>&1 \

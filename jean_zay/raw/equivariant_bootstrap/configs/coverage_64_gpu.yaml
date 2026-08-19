@@ -19,10 +19,16 @@
 # raise MC and it should fall. At MC=32 we cannot tell "kappa=1.5 corrects a real
 # deficiency" from "kappa=1.5 compensates for too few draws".
 #
-# MC=256 is therefore the single most important change here, not the image count.
+# Raising MC is therefore the single most important change here, not the image
+# count -- and the ladder has now settled how far to raise it.
 #
-# Run the MC ladder FIRST (see the README) -- it is cheap and it decides how to read
-# everything else.
+# THE LADDER HAS RUN (2026-08-19, outputs/uq_campaign/mc_ladder_64). MC=128, not
+# the 256 this config first carried: every arm is inside its convergence
+# tolerance there and two are outside it at 64. It also answered the question
+# above -- raw coverage does rise with MC, 0.65 -> 0.68 for the parametric arm
+# across the ladder, and then flattens well short of nominal. So the bias is
+# real, it is the size of a few points of coverage, and it is NOT the
+# explanation for the under-coverage this run is chasing.
 #
 # What changed on 2026-08-18
 # --------------------------
@@ -50,17 +56,34 @@ seeds: [1, 2, 3]
 out_dir: outputs/coverage_64_gpu
 
 defaults:
-  # The point of the run. At MC=256 the 0.9-quantile bias is roughly 8x smaller
-  # than at 32.
-  MC: 256
+  # Measured, not guessed: the MC ladder (outputs/uq_campaign/mc_ladder_64, run
+  # 2026-08-19 on 32 images, 512 draws kept and subsampled) puts every arm inside
+  # its own convergence tolerance at 128 and two of them outside it at 64 --
+  # `P0_parametric` on W(c) and `S_tilt` on the conditional-coverage slope. Above
+  # 128 the curves move by less than the spread across subsets, so those draws
+  # buy nothing the decision can see. See figures/mc_ladder_decision.png.
+  #
+  # This was 256, which predated the ladder. Halving it halves the campaign:
+  # 57 rows x 100 images x 128 draws = 729,600 image-draws, ~51 h at the measured
+  # 0.25 s per image-draw, against ~101 h at 256.
+  MC: 128
   n_calib: 0
+  # Do NOT trade this one for wall time. Unlike the ladder -- where the images
+  # were a paired nuisance and 32 was enough -- here the image count *is* the
+  # resolution of the headline diagnostic: the TARP ECP is an empirical CDF over
+  # the references, so 100 images is a resolution of 1/100 and 50 would be 1/50.
+  # Cut the wall clock with `--task-id/--task-count` over the 57 rows instead;
+  # that costs nothing but queue slots.
   n_test: 100
   # 64^2 on a GPU: raise until memory complains. The bootstrap holds (MC, B, H, W)
   # only when sample_consumers are attached; otherwise this is just the forward
   # batch. Confirm with --dry-run on the node.
   batch_size: 32
   super_resolution: 1.5
-  levels: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  # 0.95 is NOT in DEFAULT_LEVELS, and W(0.95) cannot be computed without it
+  # (plan/transform_selection_metrics.md §6). The objective aggregates over
+  # {0.5, 0.7, 0.8, 0.9, 0.95}; the rest are the diagnostic curve.
+  levels: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
   primary_level: 0.9
   num_alphas: 100
   # 100 references, so the TARP ECP has resolution 1/100 and is worth reading here
@@ -72,106 +95,158 @@ defaults:
 _hp: &hp [1.13, 2.56]
 _lp: &lp [2.56, 10.32]
 
+# The geometric group, one anchor per family. Referenced individually rather
+# than as a list: a YAML alias stands for a single node, so splicing a list into
+# a list yields a nested list and `build_transform` rejects it.
+_rot90: &rot90 {name: rot90, p: 0.5}
+_reflect: &reflect {name: reflect, p: 0.5}
+_shift: &shift {name: shift, p: 0.5, max_pixels: 2}
+
 arms:
-  # -- reference -------------------------------------------------------------
+  # Every spectral arm is the geometric group PLUS the family under test. The
+  # geometric families are standard, understood, and prior-preserving by
+  # construction, so a spectral family run without them measures a configuration
+  # nobody would ship. Composing costs nothing in conditioning either: exact
+  # permutations have kappa = 1 and the composite bound is a product.
+  #
+  # kappa is drawn per image from a truncated log-normal -- `mean` is the
+  # geometric mean and the support is [1, mean^2] at sigma_rel 0.5
+  # (plan/changelog.md D38). The means bracket the low end because M25 measured
+  # E_eq/E_true ~ 1.7 at kappa = 2 on the unrolled net: the transform already
+  # moves the reconstruction further than its own error does there.
+
+  # -- references --------------------------------------------------------------
   P0_parametric: []
 
-  # -- mechanism set, unchanged from the local probe so the two are comparable --
-  # kappa = 1 throughout: exact permutations, no inverse amplification.
-  G_rot90:
-    - {name: rot90, p: 1.0}
-  G_reflect:
-    - {name: reflect, p: 1.0, p_axis: 0.5}
-  G_shift:
-    - {name: shift, p: 1.0, max_pixels: 2}
-  G_mixture:
-    - {name: rot90, p: 0.5}
-    - {name: reflect, p: 0.5}
-    - {name: shift, p: 0.5, max_pixels: 2}
+  G_geometric:
+    - *rot90
+    - *reflect
+    - *shift
 
-  # -- the incumbent CARB families, as the conditioned reference ---------------
-  S_shelves:
-    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: 2.0}
-    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: 2.0}
-  S_tilt:
-    - {name: radial_tilt, p: 1.0, kappa: 2.0}
+  # -- the kappa sweep, one family at a time on top of the geometric group ------
+  # NOTE the shelves carry TWO conditioned families, so at a declared mean m the
+  # pair's composite bound is m^4 against m^2 for a single tilt. That is inherited
+  # from the previous config rather than introduced here, and it is why the arms
+  # must be compared on `kappa_realized` -- which every row now records -- rather
+  # than on the declared mean in the arm's name.
+  GS_shelves_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.10, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.10, sigma_rel: 0.5}}
+  GS_shelves_1.25:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.25, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.25, sigma_rel: 0.5}}
+  GS_shelves_1.50:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.50, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.50, sigma_rel: 0.5}}
+  GS_shelves_2.00:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 2.00, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 2.00, sigma_rel: 0.5}}
 
-  # -- the anisotropic tilt and its two orientation controls -------------------
-  # All three realize kappa=2.0 exactly and are matched in ellipticity, so they
-  # differ in ORIENTATION alone -- which is what makes the comparison mean
-  # anything. The measured axis ratio on this bank is 1.52 (median over 12
-  # coverages, outer-annulus moment), so there is a real anisotropy to aim at.
-  # If `aligned` does not beat both controls, the anisotropy is not what helps.
-  S_elliptical:
-    - {name: elliptical_tilt, p: 1.0, kappa: 2.0}
-  C_elliptical_rotated:
-    - {name: elliptical_tilt_rotated, p: 1.0, kappa: 2.0}
-  C_elliptical_random:
-    - {name: elliptical_tilt_random, p: 1.0, kappa: 2.0}
+  GS_radial_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: radial_tilt, p: 1.0, kappa: {mean: 1.10, sigma_rel: 0.5}}
+  GS_radial_1.25:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: radial_tilt, p: 1.0, kappa: {mean: 1.25, sigma_rel: 0.5}}
+  GS_radial_1.50:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: radial_tilt, p: 1.0, kappa: {mean: 1.50, sigma_rel: 0.5}}
+  GS_radial_2.00:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: radial_tilt, p: 1.0, kappa: {mean: 2.00, sigma_rel: 0.5}}
 
-  # -- Briggs, so M3's exit gate becomes decidable ------------------------------
-  # Matched realized kappa against S_tilt: the gate is "prefer the radial tilt
-  # unless Briggs beats it", and with briggs_tilt unbuilt the tilt was winning by
-  # default rather than on merit.
-  S_briggs:
-    - {name: briggs_tilt, p: 1.0, kappa: 2.0}
+  GS_elliptical_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: elliptical_tilt, p: 1.0, kappa: {mean: 1.10, sigma_rel: 0.5}}
+  GS_elliptical_1.25:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: elliptical_tilt, p: 1.0, kappa: {mean: 1.25, sigma_rel: 0.5}}
+  GS_elliptical_1.50:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: elliptical_tilt, p: 1.0, kappa: {mean: 1.50, sigma_rel: 0.5}}
+  GS_elliptical_2.00:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: elliptical_tilt, p: 1.0, kappa: {mean: 2.00, sigma_rel: 0.5}}
 
-  # -- THE KAPPA SWEEP, inside one family --------------------------------------
-  # The local probe found calibration quality ordered by kappa across families,
-  # but kappa and family type were confounded there: every kappa=1 arm was
-  # geometric and every kappa>1 arm was not. Sweeping kappa *within* `gap` breaks
-  # that. If mean |deviation| tracks kappa here, it is kappa; if it does not, it
-  # is something about the family.
-  #
-  # Bracketed around the local optimum (1.5) on both sides, with 1.1 close enough
-  # to the identity to show what a near-unconditioned mover does.
-  K_gap_1.10:
-    - {name: gap, p: 1.0, kappa: 1.10}
-  K_gap_1.25:
-    - {name: gap, p: 1.0, kappa: 1.25}
-  K_gap_1.50:
-    - {name: gap, p: 1.0, kappa: 1.50}
-  K_gap_2.00:
-    - {name: gap, p: 1.0, kappa: 2.00}
+  # Robustness is drawn uniformly over the 41-point grid on [-2, 2] and is not
+  # swept: R is the weighting *shape* while kappa scales it, so sweeping both
+  # would be a two-dimensional search before either axis is understood (D39).
+  GS_briggs_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: briggs_tilt, p: 1.0, kappa: {mean: 1.10, sigma_rel: 0.5}}
+  GS_briggs_1.25:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: briggs_tilt, p: 1.0, kappa: {mean: 1.25, sigma_rel: 0.5}}
+  GS_briggs_1.50:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: briggs_tilt, p: 1.0, kappa: {mean: 1.50, sigma_rel: 0.5}}
+  GS_briggs_2.00:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: briggs_tilt, p: 1.0, kappa: {mean: 2.00, sigma_rel: 0.5}}
 
-  # -- M4's controls, at the local optimum --------------------------------------
-  # The local probe found gap ~ gap_random ~ gap_rotated on every metric. Under
-  # the superseded selector that is not evidence about targeting: all three arms
-  # were modulating in the same near-band-edge annulus, where the coverage is thin
-  # in every direction, so there was nothing for the targeting to be better than.
-  # Under the fixed selector the controls have teeth -- at the radii where the
-  # holes actually are, only 10-22 % of half-plane cells are empty, so a random
-  # direction lands on a FILLED cell most of the time.
-  #
-  # This also bears on O5: a transposed uv axis would explain gap ~ gap_rotated
-  # but NOT gap ~ gap_random, so the two controls together separate a code bug
-  # from a real null result.
-  C_gap_random_1.50:
-    - {name: gap_random, p: 1.0, kappa: 1.50}
-  C_gap_rotated_1.50:
-    - {name: gap_rotated, p: 1.0, kappa: 1.50}
+  # -- the orientation controls, at one kappa ----------------------------------
+  # Matched to the elliptical treatment in everything but orientation, which is
+  # what lets a win be attributed to the anisotropy rather than to the family.
+  # Held at 1.50 rather than swept: a control is not a candidate.
+  GC_ell_rotated_1.50:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: elliptical_tilt_rotated, p: 1.0, kappa: {mean: 1.50, sigma_rel: 0.5}}
+  GC_ell_random_1.50:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: elliptical_tilt_random, p: 1.0, kappa: {mean: 1.50, sigma_rel: 0.5}}
 
-  # -- the superseded selector, as an explicit before/after --------------------
-  # The ONLY config that should ever name `gap_pooled`. Paired with K_gap_1.50 it
-  # measures what the fix was worth, on the same images and the same seeds. If the
-  # two arms score alike, the selector was never the problem and the M4 null is
-  # real.
-  C_gap_pooled_1.50:
-    - {name: gap_pooled, p: 1.0, kappa: 1.50}
-
-  # -- the shipped-style mixture ------------------------------------------------
-  # Everything at p=0.5. kappa COMPOUNDS: measured composite mean 3.94, median
-  # 3.00, max 11.43 at these settings. Kept as the "what a config would actually
-  # do" arm, not as a candidate.
+  # -- everything at once ------------------------------------------------------
+  # kappa compounds across whatever fires, which is why this arm is where the
+  # realized distribution earns its keep. It is admissible here in a way it was
+  # not at a fixed kappa = 2: five conditioned families at p = 0.5 and a geometric
+  # mean of 1.25 compose to a typical composite near 1.4, against the measured
+  # median 3.0 / maximum 11.4 of the old ALL arm.
   ALL_transforms:
-    - {name: rot90, p: 0.5}
-    - {name: reflect, p: 0.5}
-    - {name: shift, p: 0.5, max_pixels: 2}
-    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: 2.0}
-    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: 2.0}
-    - {name: radial_tilt, p: 0.5, kappa: 2.0}
-    - {name: gap, p: 0.5, kappa: 1.5}
-    # Deliberately NOT including elliptical_tilt or briggs_tilt. Both are radial
-    # tilts on a different metric, so stacking them with radial_tilt compounds
-    # kappa without adding a mechanism -- and the composite is already at a
-    # measured median of 3.0 and a maximum of 11.4 without them.
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.25, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.25, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.25, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.25, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.25, sigma_rel: 0.5}}

@@ -15,12 +15,18 @@
 #SBATCH -A rbn@v100
 
 # ===========================================================================
-# Raw bootstrap coverage at 64^2, no conformalisation. 14 arms x 3 seeds = 42
-# rows, MC=256, 100 images -> 1,075,200 image-draws.
+# Raw bootstrap coverage at 64^2, no conformalisation. 19 arms x 3 seeds = 57
+# rows, MC=128, 100 images -> 729,600 image-draws.
+#
+# MC came down from 256 on the ladder's evidence (configs/coverage_64_gpu.yaml
+# `defaults.MC`), which halved this run. The rate is measured, not bracketed:
+# 0.25 s per image-draw on a V100 for this problem, so ~51 h of GPU time. That is
+# three 20 h links of the chain below -- or one round of an array, since
+# `uq_campaign.py` shards rows with --task-id/--task-count and the rows are
+# independent. The serial chain is kept because it needs no coordination; switch
+# to the array when the queue, not the hours, is the constraint.
 #
 # Self-chaining and --skip-existing, so it survives a wall-time kill and resumes.
-# At 0.05 s/image-draw this is ~15 h (one job); at 0.10 s it is ~30 h (two links).
-# Read the real rate off prepare_cluster.sh's --dry-run before trusting either.
 #
 # The decisive arms are K_gap_1.10 / 1.25 / 1.50 / 2.00 -- a kappa sweep INSIDE
 # one family, which breaks the kappa/family-type confound the local probe could

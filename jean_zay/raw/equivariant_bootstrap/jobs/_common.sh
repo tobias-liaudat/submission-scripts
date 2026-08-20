@@ -73,6 +73,28 @@ chain_or_stop() {
     sbatch --dependency=afterany:"$SLURM_JOB_ID" "$job_script"
 }
 
+# `srun`, with its exit status kept rather than swallowed.
+#
+# A job script whose last statement is `set +x` exits 0 whatever `srun` did, so a
+# node with no visible GPU reports COMPLETED to Slurm and the failure is
+# discoverable only by counting output rows. That is exactly how four shards of
+# the 64^2 array were lost: `sacct` showed the *step* FAILED with exit 2 and the
+# *job* COMPLETED 0:0, and the mail said the job was fine.
+#
+# The `mark_complete` case is worse than a wrong status: a chained job that fails
+# and then writes `.COMPLETE` stops its own successor, so the campaign abandons
+# itself quietly. Anything that runs after this helper only runs on success.
+run_step() {
+    set -x
+    srun "$@"
+    local status=$?
+    set +x
+    if [ "$status" -ne 0 ]; then
+        echo "[step] srun exited $status -- not marking anything complete" >&2
+        exit "$status"
+    fi
+}
+
 mark_complete() {
     touch "$1/.COMPLETE"
     echo "[chain] campaign finished; wrote $1/.COMPLETE"

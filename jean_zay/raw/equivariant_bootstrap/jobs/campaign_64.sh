@@ -43,12 +43,10 @@ OUT_DIR=$OUTPUT_ROOT/campaign64
 
 chain_or_stop "$OUT_DIR" "$JOB_SCRIPT"
 
-set -x
-srun python -u scripts/uq_campaign.py \
+run_step python -u scripts/uq_campaign.py \
     --config "$CONFIG" \
     --out-dir "$OUT_DIR" \
     --device cuda \
     --skip-existing
-set +x
 
 mark_complete "$OUT_DIR"

@@ -104,8 +104,7 @@ OUT_DIR=$OUTPUT_ROOT/mc_ladder_64
 echo "[mc_ladder] arm=$ARM  n_images=$N_IMAGES  MC_max=$MC_MAX  batch=$BATCH_SIZE"
 echo "[mc_ladder] $((N_IMAGES * MC_MAX)) image-draws; output -> $OUT_DIR"
 
-set -x
-srun python -u scripts/mc_ladder.py \
+run_step python -u scripts/mc_ladder.py \
     --arm "$ARM" \
     --mc-max "$MC_MAX" \
     --n-images "$N_IMAGES" \
@@ -113,4 +112,3 @@ srun python -u scripts/mc_ladder.py \
     --repeats "$REPEATS" \
     --device cuda \
     --out-dir "$OUT_DIR"
-set +x

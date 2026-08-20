@@ -40,13 +40,11 @@ STATE_DIR=$OUT_DIR/.state_ar
 
 chain_or_stop "$STATE_DIR" "$JOB_SCRIPT"
 
-set -x
-srun python -u scripts/uq_campaign.py \
+run_step python -u scripts/uq_campaign.py \
     --config "$CONFIG" \
     --out-dir "$OUT_DIR" \
     --device cuda \
     --skip-existing \
     --rows $(rows_for_family "$CONFIG" artifact_removal)
-set +x
 
 mark_complete "$STATE_DIR"

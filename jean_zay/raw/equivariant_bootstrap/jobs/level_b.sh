@@ -30,8 +30,7 @@ export GPU_ARCH=v100
 SUBMISSION_REPO=/lustre/fswork/projects/rech/ney/ulx23va/projects/radio/repos/submission-scripts
 . $SUBMISSION_REPO/jean_zay/raw/equivariant_bootstrap/jobs/_common.sh
 
-set -x
-srun python -u scripts/level_b.py \
+run_step python -u scripts/level_b.py \
     --img-size 64 360 \
     --n-images 8 \
     --device cuda \

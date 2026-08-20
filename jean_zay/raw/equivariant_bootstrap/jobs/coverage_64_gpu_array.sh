@@ -65,14 +65,27 @@ OUT_DIR=$OUTPUT_ROOT/coverage_64_gpu
 TASK_COUNT=${TASK_COUNT:-16}
 TASK_ID=${SLURM_ARRAY_TASK_ID:-0}
 
-echo "[array] shard $TASK_ID of $TASK_COUNT  ->  $OUT_DIR"
+# Optional: a space-separated list of row keys (`family/arm/seed`) to restrict
+# to. `--rows` filters BEFORE the sharding, so a resume that names only the rows
+# it needs spreads them one per shard instead of leaving them wherever the
+# original partition put them.
+#
+# That matters after a partial run: the sharding is deterministic, so resubmitting
+# the whole array sends every missing row back to the same shard it was lost in.
+# Correct either way -- `--skip-existing` will not redo finished rows -- but 16
+# rows in 4 shards is 4 h where 16 rows in 16 shards is 1 h.
+#
+#   ROWS="$(bash missing_rows.sh)" sbatch coverage_64_gpu_array.sh
+ROWS=${ROWS:-}
 
-set -x
-srun python -u scripts/uq_campaign.py \
+echo "[array] shard $TASK_ID of $TASK_COUNT  ->  $OUT_DIR"
+[ -n "$ROWS" ] && echo "[array] restricted to $(echo "$ROWS" | wc -w) row(s)"
+
+run_step python -u scripts/uq_campaign.py \
     --config "$CONFIG" \
     --out-dir "$OUT_DIR" \
     --device cuda \
     --skip-existing \
     --task-id "$TASK_ID" \
-    --task-count "$TASK_COUNT"
-set +x
+    --task-count "$TASK_COUNT" \
+    ${ROWS:+--rows $ROWS}

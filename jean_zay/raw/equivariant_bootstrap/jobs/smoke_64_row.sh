@@ -54,10 +54,8 @@ ROW=${ROW:-unrolled/GS_briggs_1.50/1}
 
 echo "[smoke] row=$ROW  ->  $OUT_DIR"
 
-set -x
-srun python -u scripts/uq_campaign.py \
+run_step python -u scripts/uq_campaign.py \
     --config "$CONFIG" \
     --out-dir "$OUT_DIR" \
     --device cuda \
     --rows "$ROW"
-set +x

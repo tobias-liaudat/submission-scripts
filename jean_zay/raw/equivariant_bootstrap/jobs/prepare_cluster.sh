@@ -74,6 +74,27 @@ branch=$(git -C "$RRT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)
     && ok "radio_tools submodule initialised" \
     || bad "radio_tools submodule empty: git -C $RADIO_TOOLS_DIR submodule update --init --recursive"
 
+# `briggs_tilt` is the one family whose response comes from radio_tools rather
+# than plain torch, and it grids on demand inside the job (changelog D44). The
+# import is lazy, so nothing above reaches it -- and `pytest` does not either,
+# because the radio tests SELF-SKIP when the extra is missing. Without this
+# line a broken weights module surfaces fifteen rows into the array.
+#
+# One profile, not a store: gridding costs ~6 ms, so this is a dependency check
+# and nothing more.
+if python - <<'PY' >/dev/null 2>&1
+import torch
+from uqsuite.radio.coverage import briggs_log_ratio
+uv = torch.rand(512, 2, dtype=torch.float64) * 0.4 - 0.2
+profile = briggs_log_ratio(uv, 64, -0.5, smoothing_cells=1)
+assert profile.shape == (64, 33), profile.shape
+assert torch.isfinite(profile).all()
+PY
+then ok "briggs_tilt can grid a weight profile"
+else bad "briggs_log_ratio failed -- radio_tools.weights.gen_imaging_weights is \
+broken or missing. Every briggs_tilt row will die inside the job."
+fi
+
 cd "$CODE_REPO" || { bad "cannot cd to $CODE_REPO"; exit 1; }
 
 python -c "import coverage_plots, sys; sys.exit(0 if hasattr(coverage_plots,'TARP') else 1)" 2>/dev/null \
@@ -115,29 +136,6 @@ if python "$RRT_DIR/scripts/prefetch_drunet.py" >/dev/null 2>&1; then
     ok "DRUNet cached under $TORCH_HOME"
 else
     bad "prefetch_drunet.py failed. GPU nodes cannot download; the unrolled jobs will die."
-fi
-
-# ---------------------------------------------------------------------------
-step "3b. Briggs weight profiles"
-# ---------------------------------------------------------------------------
-# `briggs_tilt` draws its robustness from a 41-point grid, and each distinct
-# value needs its own gridded weight ratio -- about a second apiece against
-# under a millisecond cached (plan/changelog.md D39, M29). Gridding on demand
-# costs a quarter of an hour per campaign row, on the CPU, inside a GPU job.
-#
-# Every row sees the same coverages (same bank, same image order, same
-# batching), so the whole set is a few megabytes computed once, here. A store
-# that later misses -- a changed batch size, a different image count -- makes a
-# job slower, never wrong.
-BRIGGS_IMAGES=${BRIGGS_IMAGES:-100}
-BRIGGS_BATCH=${BRIGGS_BATCH:-32}
-if python "$CODE_REPO/scripts/prefetch_briggs.py" \
-        --img-size 64 --n-images "$BRIGGS_IMAGES" --batch-size "$BRIGGS_BATCH" \
-        >/tmp/uq_briggs.log 2>&1; then
-    ok "$(tail -1 /tmp/uq_briggs.log | sed 's/^ *//')"
-else
-    bad "prefetch_briggs.py failed (see /tmp/uq_briggs.log). Not fatal -- the \
-campaign will grid on demand -- but it costs ~15 min per briggs row."
 fi
 
 # ---------------------------------------------------------------------------
@@ -186,7 +184,12 @@ cat <<EOF
 
      cd $CAMPAIGN_DIR/jobs
      sbatch mc_ladder_64.sh            # array of 3, <2 h each; fixes MC for everything after
-     sbatch coverage_64_gpu.sh         # raw coverage, no conformalisation
+
+     # The 64^2 coverage campaign, rerun on per-image coverages (changelog D43).
+     # Smoke one elliptical row on the dev queue first; then the array, ~4 h.
+     ROW=unrolled/GS_elliptical_1.50/1 sbatch smoke_64_row.sh
+     sbatch coverage_64_gpu_v2_array.sh
+
      sbatch level_b.sh                 # minutes; run and READ this first
      sbatch campaign_64.sh             # the screen: which family, which kappa
      sbatch campaign_360_ar.sh         # confirmation, cheap reconstructor

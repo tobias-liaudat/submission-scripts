@@ -50,6 +50,21 @@
 # unless Briggs beats it at matched realized kappa" -- could not be evaluated at
 # all; the radial tilt was running unopposed.
 
+# 2026-08-21 -- RERUN ON PER-IMAGE COVERAGES (plan/changelog.md D43)
+# ------------------------------------------------------------------
+# The first run of this config (outputs/uq_campaign/coverage_64_gpu) is superseded.
+# `elliptical_tilt` took its second moment over the pooled batch, and these
+# coverages are tracks at different position angles, so the ellipse averaged out
+# to a near-circle: axis ratio 1.13 against a per-image median of 1.40. That made
+# the family `radial_tilt` under another name and made its own orientation
+# controls identical to it -- aligned 0.06023, rotated 0.06003, random 0.06015,
+# radial 0.06035 -- so the M3 anisotropy gate returned a tie it could not have
+# avoided. Both tilts' knees and `briggs_tilt`'s profile pooled the same way.
+#
+# The arms are UNCHANGED; only the code under them is. Rerun with
+# `coverage_64_gpu_v2_array.sh`, which writes to a fresh out-dir so the pooled
+# results stay on disk for comparison.
+
 img_size: 64
 families: [unrolled]
 seeds: [1, 2, 3]
@@ -241,6 +256,11 @@ arms:
   # not at a fixed kappa = 2: five conditioned families at p = 0.5 and a geometric
   # mean of 1.25 compose to a typical composite near 1.4, against the measured
   # median 3.0 / maximum 11.4 of the old ALL arm.
+  # KEPT AS RUN, and it is the *mislabelled* one -- see the ALLc arms below.
+  # 1.25 per family compounds to a realized composite of 1.79, so this arm was
+  # never comparable to `GS_*_1.25` the way its name implies (D45, M36). It stays
+  # because it is the only point on the old parameterisation and the bridge to
+  # the first campaign.
   ALL_transforms:
     - *rot90
     - *reflect
@@ -250,3 +270,51 @@ arms:
     - {name: radial_tilt, p: 0.5, kappa: {mean: 1.25, sigma_rel: 0.5}}
     - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.25, sigma_rel: 0.5}}
     - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.25, sigma_rel: 0.5}}
+
+  # -- the composite-kappa sweep (D45) -----------------------------------------
+  # `ALLc_X` means **composite** kappa X, not per-family X. kappa multiplies over
+  # whatever fired, and 5 families at p = 0.5 fire 2.5 at a time, so the
+  # per-family value below is solved backwards from the target (M36):
+  #
+  #     composite 1.10 -> per-family 1.038   worst case 1.46
+  #     composite 1.20 -> per-family 1.074   worst case 2.04
+  #     composite 1.35 -> per-family 1.123   worst case 3.18
+  #
+  # The `c` in the name is load-bearing: every other arm's number is per-family,
+  # and reading these as per-family would put them where `G_geometric` is.
+  #
+  # **ALLc_1.20 is the decisive arm.** `GS_shelves_1.10` realizes 1.196, so that
+  # pair is the head-to-head between the best single family and the mixture at
+  # matched conditioning -- which M35 says the mixture should win.
+  #
+  # Worst case is the product of the declared supports, i.e. every family firing
+  # with every draw at its cap. At 1.20 that is 2.04, against 9.31 for the arm
+  # above: the compounding-tail risk is bounded by the level, with no cap on how
+  # many families may fire and no change to the firing rule (D20).
+  ALLc_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+  ALLc_1.20:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+  ALLc_1.35:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}

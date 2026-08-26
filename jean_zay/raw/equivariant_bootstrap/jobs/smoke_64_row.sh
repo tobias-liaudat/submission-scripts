@@ -15,27 +15,45 @@
 #SBATCH -A rbn@v100
 
 # ===========================================================================
-# ONE ROW OF THE 64^2 CAMPAIGN, BEFORE COMMITTING 56 GPU-HOURS TO THE ARRAY.
+# THE GPU PREFLIGHT, BEFORE COMMITTING ~64 GPU-HOURS TO THE ARRAY.
 #
-# `briggs_tilt` is the row to run, and not because it is representative -- it is
-# the opposite. It is the only family whose cost model has been verified at 8
-# images rather than 100, and the only one that depends on a prebuilt profile
-# store landing in the right place under the right name.
+# Two steps, cheapest first, and the second only runs if the first passes.
 #
-# WHAT IT PROVES, in the order the log prints it:
+# 1. THE TEST SUITE, ON A GPU. This is the point of the job, and it is two
+#    minutes. `prepare_cluster.sh` runs pytest on a LOGIN node, where 13 tests
+#    in `test_transform_contract.py` skip for want of a GPU -- and those 13 are
+#    the ones that matter here.
 #
-#   "briggs: 164 prebuilt profiles from briggs_profiles_img64_n100_b32.pt"
-#       The store built by `prepare_cluster.sh` was found. If this line is
-#       ABSENT the job still runs and still gets the right answer -- it just
-#       grids on demand and spends ~15 min doing it (plan/changelog.md D39).
-#       A missing line means the keys missed: check that `batch_size` and
-#       `n_test` in the config still match what the store was built for.
+#    D43 moved coverage selection to a per-image path: `coverage_for(uv, i, B)`
+#    hands back `uv[index]`, which on the cluster is a slice of a GPU tensor,
+#    and it then goes through `as_host_coverage` / `coverage_key` once per image
+#    per draw. That exact path has broken before -- it raised
+#    `quantile() q tensor must be on the same device as the input tensor` from
+#    `radial_tilt.sample`, and the comment on the fix says it was "not reachable
+#    from a CPU-only test run". It names `radial_tilt` and `elliptical_tilt`,
+#    which are the two families D43 rewrote.
+#
+# 2. ONE CAMPAIGN ROW, end to end on real data. `ALLc_1.20` by default because
+#    it is the one row that exercises everything changed at once: radial,
+#    elliptical and briggs tilts (D43), on-the-fly Briggs gridding with no
+#    prebuilt store (D44), and the composite-kappa arithmetic (D45).
+#
+# WHAT TO READ IN THE LOG:
+#
+#   the pytest summary
+#       "641 passed, 11 skipped". On a login node it is "628 passed, 24
+#       skipped": the 13 GPU-gated tests in `test_transform_contract.py` turn
+#       from skips into passes. **If it still says 24 skipped, the node gave no
+#       GPU and this step proved nothing** -- which is the failure mode worth
+#       watching for, because it is silent.
 #
 #   the per-row summary line
 #       `kappa_realized` should show a genuine spread rather than a constant,
-#       since kappa is drawn per image now, and PASS should include
-#       `kappa_within_declared_bound` -- the check that the realized maximum
-#       respects the top of the declared support (D35, D38).
+#       and for `ALLc_1.20` the composite mean should land near **1.19**
+#       (predicted; slightly under the 1.20 target because the shelves do not
+#       attain their declared span on the grid). PASS should include
+#       `kappa_within_declared_bound` -- the realized maximum inside the top of
+#       the declared support, which for this arm is 2.04 (D35, D38, D45).
 #
 # The output goes to a SCRATCH directory, deliberately. Writing it into the
 # campaign's own out-dir would leave `--skip-existing` treating the row as done,
@@ -50,9 +68,15 @@ SUBMISSION_REPO=/lustre/fswork/projects/rech/ney/ulx23va/projects/radio/repos/su
 
 CONFIG=$CAMPAIGN_DIR/configs/coverage_64_gpu.yaml
 OUT_DIR=${OUT_DIR:-$OUTPUT_ROOT/smoke_64_row}
-ROW=${ROW:-unrolled/GS_briggs_1.50/1}
+ROW=${ROW:-unrolled/ALLc_1.20/1}
 
-echo "[smoke] row=$ROW  ->  $OUT_DIR"
+echo "[smoke] pytest on the GPU, then row=$ROW  ->  $OUT_DIR"
+
+# `run_step` exits the job on a non-zero status, so the row below never starts
+# if the suite fails -- which is the whole point of ordering it first.
+run_step env OMP_NUM_THREADS=1 python -m pytest tests -q
+
+echo "[smoke] suite passed; running one campaign row"
 
 run_step python -u scripts/uq_campaign.py \
     --config "$CONFIG" \

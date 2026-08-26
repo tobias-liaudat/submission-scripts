@@ -16,6 +16,15 @@
 #SBATCH -A rbn@v100
 
 # ===========================================================================
+# SUPERSEDED 2026-08-21 by `coverage_64_gpu_v2_array.sh`. Use that instead.
+#
+# This is the submission that produced `outputs/uq_campaign/coverage_64_gpu`,
+# kept so that campaign has a launch record. It is no longer runnable as
+# written: `prefetch_briggs.py`, named below, was removed with the profile
+# store (plan/changelog.md D44), and the elliptical results it produced were
+# measured on a pooled coverage metric (D43).
+# ===========================================================================
+#
 # THE 64^2 COVERAGE CAMPAIGN, SHARDED ACROSS GPUs.
 #
 # Same config, same rows and the same total GPU time as `coverage_64_gpu.sh`;

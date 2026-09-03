@@ -1,95 +1,200 @@
-# 360^2 campaign: confirm the ladder at the production resolution.
+# 360^2 campaign: does the 64^2 ranking hold at the size we report?
 #
-# Deliberately narrower than campaign_64.yaml. 64^2 screens; this confirms. The
-# kappa sweep, the singleton decompositions and the gap controls all stay at
-# 64^2, because they answer "which setting" and this run answers "does it hold
-# at the size we report".
+# 64^2 screens; this confirms. It is deliberately narrow -- the kappa search,
+# the orientation controls and the singleton decompositions all stay at 64^2,
+# because they answer "which setting" and this answers "does it survive at a
+# realistic size". Rewritten 2026-08-27 from the pre-D38 version, which is kept
+# beside it as `campaign_360.yaml.pre-D38`; nothing below survives from it
+# unexamined.
 #
-# Cost is the reason for the narrowing, and it is not the naive one. Measured on
-# CPU locally, one 360^2 forward pass takes 1.27 s for artifact_removal but
-# 28.1 s for the PSF-unrolled net -- a 22x ratio, and at 64^2 the same comparison
-# is 45x (0.039 s against 1.776 s). So the two reconstructors get separate job
-# scripts with separate walltimes rather than sharing an array. Confirm both
-# against `--dry-run` on the actual GPU before submitting; these numbers do not
-# transfer from a laptop.
+# WHAT 64^2 SETTLED (outputs/uq_campaign/coverage_64_gpu_v2, 72 rows, 3 seeds).
+# Paired against the geometric group, since the seeds share images and noise:
+#
+#   GS_shelves_1.10   -0.00213   3.6 sigma   real gain, the best single family
+#   ALLc_1.20         -0.00183   6.4 sigma   real gain, ties the shelves
+#   GS_briggs_1.10    -0.00075   7.4 sigma   real gain, small but very consistent
+#   GS_elliptical_1.10 -0.00023  1.7 sigma   indistinguishable from doing nothing
+#   GS_radial_1.10    -0.00009   1.2 sigma   indistinguishable from doing nothing
+#
+# Every family's optimum sits at the LOW end of the grid, and J climbs steeply
+# above kappa ~ 1.2.
+#
+# ------------------------------------------------------------------------------
+# THE ONE THING THAT DOES NOT TRANSFER: THE SHELF CUTOFFS
+# ------------------------------------------------------------------------------
+# The old header claimed cycles-per-image transfers between sizes and that "that
+# is the whole reason for the unit". It does not, for these banks. The 64^2 and
+# 360^2 uv banks are **bit-identical in radians per pixel** -- so the pixel scale
+# is the same and 360^2 is a 5.625x WIDER field of view, not a finer sampling of
+# the same field. A fixed angular scale therefore occupies 5.625x more cycles
+# per image here.
+#
+# Left unscaled, the 64^2 cutoffs would cover a completely different band:
+#
+#   lowpass [2.56, 10.32]   12.0% - 48.4% of the band at 64^2
+#                            2.1% -  8.6% of the band at 360^2
+#
+# So every cutoff below is the 64^2 value x 5.625, which preserves both the
+# angular scale and the fraction of the measured band. The band limit here is
+# 120 cycles (360 / 2 / super_resolution).
+#
+# The tilt knees need no such treatment: they are drawn as quantile levels of
+# the coverage's own sorted radii (changelog D40), so they follow the array
+# automatically. Only the shelves carry absolute cutoffs.
+#
+# ------------------------------------------------------------------------------
+# COST
+# ------------------------------------------------------------------------------
+# `unrolled/360` is NOT the reconstructor `unrolled/64` is: 64^2 uses a tkbn
+# NUFFT normal step, 360^2 a PSF/finufft one (both 15 unrolled steps, DRUNet
+# prior). The PSF step batches far better, which is why 360^2 is CHEAPER per
+# image-draw than 64^2 despite 31.6x the pixels -- measured, not assumed.
+#
+# The dry-run probe measures the reconstructor alone and so under-reads a real
+# row; use it for ordering, and take the per-row `seconds_per_image_draw` a real
+# row records as the number to plan on (changelog D47, M37).
 
 img_size: 360
-families: [artifact_removal, unrolled]
-seeds: [1]
+families: [unrolled]
+seeds: [1, 2, 3]
 out_dir: outputs/campaign360
 
 defaults:
-  MC: 100
-  n_calib: 100
+  # From the 64^2 ladder (outputs/uq_campaign/mc_ladder_64). NOT re-laddered at
+  # 360^2 -- the convergence argument is about the number of draws behind a
+  # quantile, not about image size, but it is an assumption and worth stating.
+  MC: 128
+  # No RCPS here, as at 64^2: the criterion is the calibrated width W(c), which
+  # fits its own scalar by bisection. `calibration: null` below is what turns
+  # conformalisation off.
+  n_calib: 0
   n_test: 100
-  # 360^2 with MC draws in flight; raise only after watching memory on the node.
-  batch_size: 2
+  # THE ONE NUMBER TO CONFIRM ON THE NODE BEFORE SUBMITTING THE ARRAY. 64^2 ran
+  # at 32 on a V100-32g; 360^2 is 31.6x the pixels per image. 4 divides 100
+  # evenly and should be safe on an 80 GB A100, but an OOM four hours into a row
+  # costs more than a smoke row does. Raise it only after watching memory.
+  batch_size: 4
   super_resolution: 1.5
-  levels: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  # 0.95 is NOT in DEFAULT_LEVELS and W(0.95) cannot be computed without it
+  # (plan/transform_selection_metrics.md section 6).
+  levels: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
   primary_level: 0.9
   num_alphas: 100
-  # TARP's ECP is an empirical CDF over the references, so its resolution is
-  # 1/N. With 200 references, 100 bins is already finer than the data.
   tarp_bins: 100
   psnr_tolerance_db: 3.0
-  calibration:
-    error: 0.1
-    dl: 0.05
-    lmax: 5.0
-    bound: null
+  calibration: null
 
-# Pinned at the plan's prior until the 64^2 sweep names a winner. Change this
-# one anchor and every conditioned arm below follows.
-_kappa: &kappa 2.0
+# 64^2 values x 5.625; see the header. High-pass stays entirely below low-pass,
+# which `registry._check_shelf_bands` enforces at construction.
+_hp: &hp [6.36, 14.40]
+_lp: &lp [14.40, 58.05]
 
-# Cutoffs are in cycles per image -- one oscillation across the field of view,
-# a property of the sky rather than the sampling -- so the same values that were
-# tuned at 64^2 are the right ones here. That is the whole reason for the unit.
-_highpass: &highpass [1.13, 2.56]
-_lowpass: &lowpass [2.56, 10.32]
+_rot90: &rot90 {name: rot90, p: 0.5}
+_reflect: &reflect {name: reflect, p: 0.5}
+_shift: &shift {name: shift, p: 0.5, max_pixels: 2}
 
 arms:
-  L0_identity: []
-  L1_geometry:
-    - {name: rot90, p: 0.5}
-    - {name: reflect, p: 0.5}
-    - {name: shift, p: 0.5, max_pixels: 2}
-  L2_highpass:
-    - {name: rot90, p: 0.5}
-    - {name: reflect, p: 0.5}
-    - {name: shift, p: 0.5, max_pixels: 2}
-    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
-  L3_lowpass:
-    - {name: rot90, p: 0.5}
-    - {name: reflect, p: 0.5}
-    - {name: shift, p: 0.5, max_pixels: 2}
-    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
-    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
-  L4_radial_tilt:
-    - {name: rot90, p: 0.5}
-    - {name: reflect, p: 0.5}
-    - {name: shift, p: 0.5, max_pixels: 2}
-    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
-    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
-    - {name: radial_tilt, p: 0.5, kappa: *kappa}
-  L5_full:
-    - {name: rot90, p: 0.5}
-    - {name: reflect, p: 0.5}
-    - {name: shift, p: 0.5, max_pixels: 2}
-    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
-    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
-    - {name: radial_tilt, p: 0.5, kappa: *kappa}
-    - {name: gap, p: 0.5, kappa: 1.5}
+  # -- references --------------------------------------------------------------
+  P0_parametric: []
 
-  # Spectral without geometry. If the ladder improves only here, the geometric
-  # families are the thing holding it back -- which is what 64^2 already says on
-  # the artifact-removal nets, and what this run tests on the unrolled ones.
-  S3_radial_tilt:
-    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
-    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
-    - {name: radial_tilt, p: 0.5, kappa: *kappa}
-  S4_gap:
-    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
-    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
-    - {name: radial_tilt, p: 0.5, kappa: *kappa}
-    - {name: gap, p: 0.5, kappa: 1.5}
+  G_geometric:
+    - *rot90
+    - *reflect
+    - *shift
+
+  # -- the winner, with its optimum resolved ------------------------------------
+  # Four points rather than two: at 64^2 every family's best was the LOWEST kappa
+  # on the grid, so the minimum was never bracketed from below. 1.05 is the point
+  # that tests whether it is lower still. The shelves carry two conditioned
+  # families, so realized kappa is roughly the square of the declared mean --
+  # 1.05 lands near 1.10 realized, 1.10 near 1.20.
+  GS_shelves_1.05:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.05, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.05, sigma_rel: 0.5}}
+  GS_shelves_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.10, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.10, sigma_rel: 0.5}}
+  GS_shelves_1.25:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.25, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.25, sigma_rel: 0.5}}
+  GS_shelves_1.50:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.50, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.50, sigma_rel: 0.5}}
+
+  # -- the second real gain, two points ----------------------------------------
+  GS_briggs_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: briggs_tilt, p: 1.0, kappa: {mean: 1.10, sigma_rel: 0.5}}
+  GS_briggs_1.25:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: briggs_tilt, p: 1.0, kappa: {mean: 1.25, sigma_rel: 0.5}}
+
+  # -- the two nulls, one point each -------------------------------------------
+  # Kept, at their 64^2 best only, because "these families do nothing" is a claim
+  # the paper makes and a claim a reader will want measured at both sizes. Not
+  # swept: a family that is 1.2 sigma from the geometric group at its best does
+  # not need its worst measured again.
+  #
+  # The orientation controls (GC_ell_rotated / GC_ell_random) are NOT here. The
+  # two uv banks are bit-identical, so the ellipse the elliptical tilt sees at
+  # 360^2 is the same one it saw at 64^2 -- median axis ratio 1.40, max 2.23 --
+  # and the M3 gate would re-answer a settled question at full cost (D43).
+  GS_radial_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: radial_tilt, p: 1.0, kappa: {mean: 1.10, sigma_rel: 0.5}}
+  GS_elliptical_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: elliptical_tilt, p: 1.0, kappa: {mean: 1.10, sigma_rel: 0.5}}
+
+  # -- the mixture, declared on the composite (D45) -----------------------------
+  # `ALLc_X` is COMPOSITE kappa X, not per-family X. Five families at p = 0.5 fire
+  # 2.5 at a time and their kappa multiply, so the per-family value is solved
+  # backwards: composite 1.10 -> 1.038, 1.20 -> 1.074, 1.35 -> 1.123 (M36).
+# The same three points as the 64^2 run, so the curves are comparable.
+  ALLc_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+  ALLc_1.20:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+  ALLc_1.35:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}

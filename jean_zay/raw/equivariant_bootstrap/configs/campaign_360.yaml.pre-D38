@@ -1,0 +1,95 @@
+# 360^2 campaign: confirm the ladder at the production resolution.
+#
+# Deliberately narrower than campaign_64.yaml. 64^2 screens; this confirms. The
+# kappa sweep, the singleton decompositions and the gap controls all stay at
+# 64^2, because they answer "which setting" and this run answers "does it hold
+# at the size we report".
+#
+# Cost is the reason for the narrowing, and it is not the naive one. Measured on
+# CPU locally, one 360^2 forward pass takes 1.27 s for artifact_removal but
+# 28.1 s for the PSF-unrolled net -- a 22x ratio, and at 64^2 the same comparison
+# is 45x (0.039 s against 1.776 s). So the two reconstructors get separate job
+# scripts with separate walltimes rather than sharing an array. Confirm both
+# against `--dry-run` on the actual GPU before submitting; these numbers do not
+# transfer from a laptop.
+
+img_size: 360
+families: [artifact_removal, unrolled]
+seeds: [1]
+out_dir: outputs/campaign360
+
+defaults:
+  MC: 100
+  n_calib: 100
+  n_test: 100
+  # 360^2 with MC draws in flight; raise only after watching memory on the node.
+  batch_size: 2
+  super_resolution: 1.5
+  levels: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  primary_level: 0.9
+  num_alphas: 100
+  # TARP's ECP is an empirical CDF over the references, so its resolution is
+  # 1/N. With 200 references, 100 bins is already finer than the data.
+  tarp_bins: 100
+  psnr_tolerance_db: 3.0
+  calibration:
+    error: 0.1
+    dl: 0.05
+    lmax: 5.0
+    bound: null
+
+# Pinned at the plan's prior until the 64^2 sweep names a winner. Change this
+# one anchor and every conditioned arm below follows.
+_kappa: &kappa 2.0
+
+# Cutoffs are in cycles per image -- one oscillation across the field of view,
+# a property of the sky rather than the sampling -- so the same values that were
+# tuned at 64^2 are the right ones here. That is the whole reason for the unit.
+_highpass: &highpass [1.13, 2.56]
+_lowpass: &lowpass [2.56, 10.32]
+
+arms:
+  L0_identity: []
+  L1_geometry:
+    - {name: rot90, p: 0.5}
+    - {name: reflect, p: 0.5}
+    - {name: shift, p: 0.5, max_pixels: 2}
+  L2_highpass:
+    - {name: rot90, p: 0.5}
+    - {name: reflect, p: 0.5}
+    - {name: shift, p: 0.5, max_pixels: 2}
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+  L3_lowpass:
+    - {name: rot90, p: 0.5}
+    - {name: reflect, p: 0.5}
+    - {name: shift, p: 0.5, max_pixels: 2}
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
+  L4_radial_tilt:
+    - {name: rot90, p: 0.5}
+    - {name: reflect, p: 0.5}
+    - {name: shift, p: 0.5, max_pixels: 2}
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
+    - {name: radial_tilt, p: 0.5, kappa: *kappa}
+  L5_full:
+    - {name: rot90, p: 0.5}
+    - {name: reflect, p: 0.5}
+    - {name: shift, p: 0.5, max_pixels: 2}
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
+    - {name: radial_tilt, p: 0.5, kappa: *kappa}
+    - {name: gap, p: 0.5, kappa: 1.5}
+
+  # Spectral without geometry. If the ladder improves only here, the geometric
+  # families are the thing holding it back -- which is what 64^2 already says on
+  # the artifact-removal nets, and what this run tests on the unrolled ones.
+  S3_radial_tilt:
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
+    - {name: radial_tilt, p: 0.5, kappa: *kappa}
+  S4_gap:
+    - {name: highpass, p: 0.5, cutoff_range: *highpass, kappa: *kappa}
+    - {name: lowpass, p: 0.5, cutoff_range: *lowpass, kappa: *kappa}
+    - {name: radial_tilt, p: 0.5, kappa: *kappa}
+    - {name: gap, p: 0.5, kappa: 1.5}

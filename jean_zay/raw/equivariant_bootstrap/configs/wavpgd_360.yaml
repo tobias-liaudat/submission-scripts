@@ -1,0 +1,119 @@
+# The reconstructor-independence campaign at 360^2: a CLASSICAL solver.
+#
+# WHY THIS EXISTS
+# ---------------
+# Every campaign so far scored a trained network. The paper's claim is that the
+# equivariant bootstrap does not depend on the reconstructor, and the only way to
+# support that is to run it on one we did not train. `wavpgd` is proximal
+# gradient with a db1-db8 wavelet dictionary and the PSF normal operator
+# (changelog D48) -- non-learned, and deliberately WORSE than the unrolled net:
+# 32.76 dB against 37.54 dB, with the dirty image at 26.23 dB. That 4.8 dB gap is
+# more than twice the 1.9 dB at 64^2, so this is where the headroom argument
+# below bites hardest. More headroom is the point, not a defect.
+#
+# PAIRED WITH THE EXISTING RUNS. Same images, same coverages, same ISNR, same
+# arms as `campaign_360.yaml`, and `wavpgd/360` reads the same
+# `large_img360_cov1000_ntrain4000_psf_finufft` artifacts as `unrolled/360`, so
+# the arms are directly comparable row for row.
+#
+# THE ARMS, AND WHY THESE FIVE
+# ----------------------------
+#   P0_parametric   no group action -- the non-equivariant baseline
+#   G_geometric     the exact-permutation subgroup, the minimal action
+#   ALLc_{1.10,1.20,1.35}   the full mixture at three composite-kappa targets
+#
+# Three kappa values rather than one because **the optimum moves with the
+# reconstructor's headroom**. The 360^2 net preferred ALLc_1.10 (J = 0.02645,
+# rank 1 of 13) while the weaker 64^2 net preferred ALLc_1.20 -- better
+# reconstructor, lower optimal kappa. wavpgd is 4.8 dB worse than this net, so
+# its optimum should sit HIGHER, and pinning it to ALLc_1.10 would understate
+# the method at exactly the size the paper leads on. Sweeping the three
+# brackets it.
+#
+# READ THE SLOPE, NOT ONLY W(c). At 360^2 the net's arms separate barely on J
+# (ALLc_1.10 0.02645 vs geometric 0.02651, a 0.2 % gap that is inside the
+# spread) but cleanly and monotonically on the conditional-coverage slope:
+# parametric 0.0825 -> geometric 0.0580 -> ALLc_1.10 0.0436. Expect the same
+# here, and do not read a null on J as a null overall.
+#
+# kappa is declared on the COMPOSITE (D45): the per-family means 1.038 / 1.074 /
+# 1.123 solve backwards from composite targets 1.10 / 1.20 / 1.35 for a 5-family
+# arm at p=0.5 (M36). Compare arms on `kappa_realized`, which every row records,
+# never on the name.
+#
+# 5 arms x 3 seeds = 15 rows. Launch with `wavpgd_array.sh` (H100, one row per
+# array task).
+
+img_size: 360
+families: [wavpgd]
+seeds: [1, 2, 3]
+out_dir: outputs/wavpgd_360
+
+defaults:
+  MC: 128
+  n_calib: 0
+  n_test: 100
+  # 50 divides n_test evenly, so every batch is the same size and the measured
+  # per-image cost is exact rather than an average over a short final batch.
+  # Batch 64 was measured without OOM at both sizes (M41); the wavelet Dykstra
+  # loop holds (8, B, H, W) twice, which is 207 MB here, plus a 4 MB PSF kernel
+  # per image; that is under 1 GB on an 80 GB card, so this is not close to the
+  # limit. NOTE this is 50 where `campaign_360.yaml` used 4: that 4 was sized for
+  # the unrolled net's DRUNet activations, which this solver does not have. Larger batches are strictly cheaper per image-draw -- 4 -> 64 is
+  # an ~8x improvement -- so do not lower this without re-reading M41.
+  batch_size: 50
+  super_resolution: 1.5
+  levels: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
+  primary_level: 0.9
+  num_alphas: 100
+  tarp_bins: 100
+  # The classical solver's PSNR reference is 32.76 dB (runs.yaml), measured at
+  # this exact condition; a row landing 3 dB off it is a wiring failure, not a
+  # bad arm.
+  psnr_tolerance_db: 3.0
+  calibration: null
+
+_hp: &hp [6.36, 14.40]
+_lp: &lp [14.40, 58.05]
+
+_rot90: &rot90 {name: rot90, p: 0.5}
+_reflect: &reflect {name: reflect, p: 0.5}
+_shift: &shift {name: shift, p: 0.5, max_pixels: 2}
+
+arms:
+  P0_parametric: []
+
+  G_geometric:
+    - *rot90
+    - *reflect
+    - *shift
+
+  ALLc_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+
+  ALLc_1.20:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+
+  ALLc_1.35:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}

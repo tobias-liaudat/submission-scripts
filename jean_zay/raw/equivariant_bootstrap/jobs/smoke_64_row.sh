@@ -59,16 +59,48 @@
 # campaign's own out-dir would leave `--skip-existing` treating the row as done,
 # so the array would inherit a row produced by a different submission.
 #
+# CONFIG, ROW, OUT_DIR and GPU_ARCH are all overridable, so this smokes any
+# campaign rather than only the 64-pixel one. The #SBATCH lines below are the
+# 64-pixel defaults; sbatch command-line flags beat them, which is how a 360
+# row gets onto an A100:
+#
+#   CONFIG=campaign_360.yaml ROW=unrolled/ALLc_1.20/1 \
+#   OUT_DIR=smoke_360_row GPU_ARCH=a100 \
+#       sbatch -C a100 -A rbn@a100 --qos=qos_gpu_a100-dev --cpus-per-task=8 \
+#              --time=02:00:00 smoke_64_row.sh
+#
+#   Bare names, NOT $CAMPAIGN_DIR/... -- those variables live in `_common.sh`
+#   and are empty in the shell you type this into.
+#
 #   sbatch smoke_64_row.sh
 # ===========================================================================
 
-export GPU_ARCH=v100
+export GPU_ARCH=${GPU_ARCH:-v100}
 SUBMISSION_REPO=/lustre/fswork/projects/rech/ney/ulx23va/projects/radio/repos/submission-scripts
 . $SUBMISSION_REPO/jean_zay/raw/equivariant_bootstrap/jobs/_common.sh
 
-CONFIG=$CAMPAIGN_DIR/configs/coverage_64_gpu.yaml
-OUT_DIR=${OUT_DIR:-$OUTPUT_ROOT/smoke_64_row}
+# CONFIG and OUT_DIR accept a BARE NAME, resolved here against the campaign's
+# own layout. That is not sugar: `$CAMPAIGN_DIR` and `$OUTPUT_ROOT` are defined
+# in `_common.sh`, which this job sources at RUNTIME, so a submitter who writes
+# `CONFIG=$CAMPAIGN_DIR/configs/x.yaml sbatch ...` has those expand to empty in
+# their own shell and silently submits `--config /configs/x.yaml`. Taking a bare
+# name removes the trap instead of documenting it.
+CONFIG=${CONFIG:-coverage_64_gpu.yaml}
+OUT_DIR=${OUT_DIR:-smoke_64_row}
 ROW=${ROW:-unrolled/ALLc_1.20/1}
+
+case "$CONFIG" in */*) ;; *) CONFIG=$CAMPAIGN_DIR/configs/$CONFIG ;; esac
+case "$OUT_DIR" in */*) ;; *) OUT_DIR=$OUTPUT_ROOT/$OUT_DIR ;; esac
+
+# Before pytest, not after: a mistyped path should cost a second, not the two
+# minutes of a GPU test suite followed by a traceback.
+if [ ! -f "$CONFIG" ]; then
+    echo "[smoke] no config at '$CONFIG'." >&2
+    echo "[smoke] pass a bare name (CONFIG=campaign_360.yaml) or an absolute path." >&2
+    echo "[smoke] available:" >&2
+    ls -1 "$CAMPAIGN_DIR/configs" | sed 's/^/[smoke]   /' >&2
+    exit 2
+fi
 
 echo "[smoke] pytest on the GPU, then row=$ROW  ->  $OUT_DIR"
 

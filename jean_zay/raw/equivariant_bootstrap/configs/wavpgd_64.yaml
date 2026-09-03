@@ -1,0 +1,110 @@
+# The reconstructor-independence campaign at 64^2: a CLASSICAL solver.
+#
+# WHY THIS EXISTS
+# ---------------
+# Every campaign so far scored a trained network. The paper's claim is that the
+# equivariant bootstrap does not depend on the reconstructor, and the only way to
+# support that is to run it on one we did not train. `wavpgd` is proximal
+# gradient with a db1-db8 wavelet dictionary and the PSF normal operator
+# (changelog D48) -- non-learned, and deliberately WORSE than the unrolled net:
+# 29.11 dB against 31.05 dB, with the dirty image at 20.57 dB. More headroom is
+# the point, not a defect.
+#
+# PAIRED WITH THE EXISTING RUNS. Same images, same coverages, same ISNR, same
+# arms as `coverage_64_gpu.yaml`. The uv bank is byte-identical across the tkbn
+# and psf_finufft artifact dirs (md5 45235f6049c4b80fcb1d593cdabd1705, M38), so
+# `wavpgd/64` and `unrolled/64` see the same problem and the arms are directly
+# comparable row for row.
+#
+# THE ARMS, AND WHY THESE FIVE
+# ----------------------------
+#   P0_parametric   no group action -- the non-equivariant baseline
+#   G_geometric     the exact-permutation subgroup, the minimal action
+#   ALLc_{1.10,1.20,1.35}   the full mixture at three composite-kappa targets
+#
+# Three kappa values rather than one because **the optimum moves with the
+# reconstructor's headroom**. On the unrolled net the 64^2 optimum was ALLc_1.20
+# (J = 0.05517 against 0.05700 for geometric) while the far better 360^2 net
+# preferred ALLc_1.10 -- better reconstructor, lower optimal kappa. wavpgd is
+# worse than either, so its optimum should sit HIGHER, and pinning it to the
+# net's value would understate the method. Sweeping the three brackets it.
+#
+# kappa is declared on the COMPOSITE (D45): the per-family means 1.038 / 1.074 /
+# 1.123 solve backwards from composite targets 1.10 / 1.20 / 1.35 for a 5-family
+# arm at p=0.5 (M36). Compare arms on `kappa_realized`, which every row records,
+# never on the name.
+#
+# 5 arms x 3 seeds = 15 rows. Launch with `wavpgd_array.sh` (H100, one row per
+# array task).
+
+img_size: 64
+families: [wavpgd]
+seeds: [1, 2, 3]
+out_dir: outputs/wavpgd_64
+
+defaults:
+  MC: 128
+  n_calib: 0
+  n_test: 100
+  # 50 divides n_test evenly, so every batch is the same size and the measured
+  # per-image cost is exact rather than an average over a short final batch.
+  # Batch 64 was measured without OOM at both sizes (M41); the wavelet Dykstra
+  # loop holds (8, B, H, W) twice, which is 130 MB here, so this is not close to
+  # the limit. Larger batches are strictly cheaper per image-draw -- 4 -> 64 is
+  # an ~8x improvement -- so do not lower this without re-reading M41.
+  batch_size: 50
+  super_resolution: 1.5
+  levels: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
+  primary_level: 0.9
+  num_alphas: 100
+  tarp_bins: 100
+  # The classical solver's PSNR reference is 29.11 dB (runs.yaml), measured at
+  # this exact condition; a row landing 3 dB off it is a wiring failure, not a
+  # bad arm.
+  psnr_tolerance_db: 3.0
+  calibration: null
+
+_hp: &hp [1.13, 2.56]
+_lp: &lp [2.56, 10.32]
+
+_rot90: &rot90 {name: rot90, p: 0.5}
+_reflect: &reflect {name: reflect, p: 0.5}
+_shift: &shift {name: shift, p: 0.5, max_pixels: 2}
+
+arms:
+  P0_parametric: []
+
+  G_geometric:
+    - *rot90
+    - *reflect
+    - *shift
+
+  ALLc_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+
+  ALLc_1.20:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+
+  ALLc_1.35:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}

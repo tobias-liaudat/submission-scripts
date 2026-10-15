@@ -1,0 +1,191 @@
+# THE SAME 360^2 CAMPAIGN, ON A DELIBERATELY WEAKER NETWORK.
+#
+# Identical in every respect to `campaign_360.yaml` -- same arms, seeds, MC,
+# images, coverages, shelf cutoffs -- except the reconstructor. `unrolled/360`
+# was trained with `weighted_loss: true`; this one is the same architecture with
+# it FALSE, and a diff of the two resolved configs shows that flag and the run
+# name and nothing else. So the arms are paired row for row and any difference is
+# attributable to training.
+#
+# WHY RUN A WORSE NETWORK ON PURPOSE
+# ----------------------------------
+# To separate two candidate explanations for how well the parametric bootstrap
+# does, and the gallery run has already picked between them.
+#
+# The first guess was "head-room to the operator ceiling": parametric should look
+# good wherever the reconstructor sits far below 36.78 dB, because then the error
+# lives inside the measured subspace where resampling noise can see it. **That is
+# wrong.** Measured on image 0 at MC=128, sigma/|residual| for the parametric arm:
+#
+#     unrolled_unweighted/360   PSNR 30.88   0.39   <- furthest below ceiling,
+#     unrolled/64               PSNR 30.37   0.72       and the WORST parametric
+#     unrolled/360              PSNR 33.95   0.77
+#     wavpgd/64                 PSNR 30.49   0.85
+#     wavpgd/360                PSNR 33.11   1.16
+#
+# Head-room does not order that list. What does is **learned prior versus fixed
+# prior**. wavpgd is a convex solver whose map is the same function on every
+# draw, so noise resampling explores essentially all of its variability and
+# parametric is already near-calibrated (1.16). A network's error includes a
+# systematic, content-dependent component -- the learned prior's bias -- which
+# barely moves when the noise is resampled, so parametric cannot see it. The
+# weaker the network, the larger that component: this run is 8 dB worse in
+# validation than its weighted-loss sibling and its parametric sigma covers only
+# 39 % of the error.
+#
+# So this campaign is the strongest test of the group action we have run: it has
+# the most for the transforms to recover (0.39 -> 0.84 on that one image), and it
+# is a *network*, so unlike the wavpgd comparison it is not confounded with the
+# solver family. One training flag is the only difference from `campaign_360`.
+#
+# Registered before the run: the equivariant arms should improve raw coverage
+# MORE here than in any campaign so far, and parametric should be the worst it
+# has been. The gallery says that on one image; this says it on 100.
+#
+# 13 arms x 3 seeds = 39 rows, ~0.58 h each. Launch with
+# `campaign_360_unweighted_array.sh`.
+#
+img_size: 360
+families: [unrolled_unweighted]
+seeds: [1, 2, 3]
+out_dir: outputs/campaign_360_unweighted
+
+defaults:
+  # From the 64^2 ladder (outputs/uq_campaign/mc_ladder_64). NOT re-laddered at
+  # 360^2 -- the convergence argument is about the number of draws behind a
+  # quantile, not about image size, but it is an assumption and worth stating.
+  MC: 128
+  # No RCPS here, as at 64^2: the criterion is the calibrated width W(c), which
+  # fits its own scalar by bisection. `calibration: null` below is what turns
+  # conformalisation off.
+  n_calib: 0
+  n_test: 100
+  # THE ONE NUMBER TO CONFIRM ON THE NODE BEFORE SUBMITTING THE ARRAY. 64^2 ran
+  # at 32 on a V100-32g; 360^2 is 31.6x the pixels per image. 4 divides 100
+  # evenly and should be safe on an 80 GB A100, but an OOM four hours into a row
+  # costs more than a smoke row does. Raise it only after watching memory.
+  batch_size: 4
+  super_resolution: 1.5
+  # 0.95 is NOT in DEFAULT_LEVELS and W(0.95) cannot be computed without it
+  # (plan/transform_selection_metrics.md section 6).
+  levels: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
+  primary_level: 0.9
+  num_alphas: 100
+  tarp_bins: 100
+  psnr_tolerance_db: 3.0
+  calibration: null
+
+# 64^2 values x 5.625; see the header. High-pass stays entirely below low-pass,
+# which `registry._check_shelf_bands` enforces at construction.
+_hp: &hp [6.36, 14.40]
+_lp: &lp [14.40, 58.05]
+
+_rot90: &rot90 {name: rot90, p: 0.5}
+_reflect: &reflect {name: reflect, p: 0.5}
+_shift: &shift {name: shift, p: 0.5, max_pixels: 2}
+
+arms:
+  # -- references --------------------------------------------------------------
+  P0_parametric: []
+
+  G_geometric:
+    - *rot90
+    - *reflect
+    - *shift
+
+  # -- the winner, with its optimum resolved ------------------------------------
+  # Four points rather than two: at 64^2 every family's best was the LOWEST kappa
+  # on the grid, so the minimum was never bracketed from below. 1.05 is the point
+  # that tests whether it is lower still. The shelves carry two conditioned
+  # families, so realized kappa is roughly the square of the declared mean --
+  # 1.05 lands near 1.10 realized, 1.10 near 1.20.
+  GS_shelves_1.05:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.05, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.05, sigma_rel: 0.5}}
+  GS_shelves_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.10, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.10, sigma_rel: 0.5}}
+  GS_shelves_1.25:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.25, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.25, sigma_rel: 0.5}}
+  GS_shelves_1.50:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.50, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.50, sigma_rel: 0.5}}
+
+  # -- the second real gain, two points ----------------------------------------
+  GS_briggs_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: briggs_tilt, p: 1.0, kappa: {mean: 1.10, sigma_rel: 0.5}}
+  GS_briggs_1.25:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: briggs_tilt, p: 1.0, kappa: {mean: 1.25, sigma_rel: 0.5}}
+
+  # -- the two nulls, one point each -------------------------------------------
+  # Kept, at their 64^2 best only, because "these families do nothing" is a claim
+  # the paper makes and a claim a reader will want measured at both sizes. Not
+  # swept: a family that is 1.2 sigma from the geometric group at its best does
+  # not need its worst measured again.
+  #
+  # The orientation controls (GC_ell_rotated / GC_ell_random) are NOT here. The
+  # two uv banks are bit-identical, so the ellipse the elliptical tilt sees at
+  # 360^2 is the same one it saw at 64^2 -- median axis ratio 1.40, max 2.23 --
+  # and the M3 gate would re-answer a settled question at full cost (D43).
+  GS_radial_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: radial_tilt, p: 1.0, kappa: {mean: 1.10, sigma_rel: 0.5}}
+  GS_elliptical_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: elliptical_tilt, p: 1.0, kappa: {mean: 1.10, sigma_rel: 0.5}}
+
+  # -- the mixture, declared on the composite (D45) -----------------------------
+  # `ALLc_X` is COMPOSITE kappa X, not per-family X. Five families at p = 0.5 fire
+  # 2.5 at a time and their kappa multiply, so the per-family value is solved
+  # backwards: composite 1.10 -> 1.038, 1.20 -> 1.074, 1.35 -> 1.123 (M36).
+# The same three points as the 64^2 run, so the curves are comparable.
+  ALLc_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.038, sigma_rel: 0.5}}
+  ALLc_1.20:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.074, sigma_rel: 0.5}}
+  ALLc_1.35:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 0.5, cutoff_range: *hp, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: lowpass, p: 0.5, cutoff_range: *lp, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: radial_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: elliptical_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}
+    - {name: briggs_tilt, p: 0.5, kappa: {mean: 1.123, sigma_rel: 0.5}}

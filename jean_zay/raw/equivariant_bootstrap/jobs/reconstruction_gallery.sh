@@ -74,13 +74,19 @@ IMAGE_INDEX=${IMAGE_INDEX:-0}
 OUT_DIR=${OUT_DIR:-reconstruction_gallery}
 case "$OUT_DIR" in */*) ;; *) OUT_DIR=$OUTPUT_ROOT/$OUT_DIR ;; esac
 
-echo "[gallery] MC=$MC image=$IMAGE_INDEX -> $OUT_DIR"
+echo "[gallery] MC=$MC image=$IMAGE_INDEX configs=$CONFIGS -> $OUT_DIR"
+
+# Bare config names, resolved against the campaign layout. Override to add a
+# reconstructor without touching the job:
+#   CONFIGS="campaign_360_unweighted.yaml" sbatch reconstruction_gallery.sh
+CONFIGS=${CONFIGS:-"coverage_64_gpu.yaml campaign_360.yaml wavpgd_64.yaml wavpgd_360.yaml"}
+PATHS=""
+for c in $CONFIGS; do
+    case "$c" in */*) PATHS="$PATHS $c" ;; *) PATHS="$PATHS $CAMPAIGN_DIR/configs/$c" ;; esac
+done
 
 run_step python -u scripts/reconstruction_gallery.py \
-    --config "$CAMPAIGN_DIR/configs/coverage_64_gpu.yaml" \
-             "$CAMPAIGN_DIR/configs/campaign_360.yaml" \
-             "$CAMPAIGN_DIR/configs/wavpgd_64.yaml" \
-             "$CAMPAIGN_DIR/configs/wavpgd_360.yaml" \
+    --config $PATHS \
     --image-index "$IMAGE_INDEX" \
     --mc "$MC" \
     --device cuda \

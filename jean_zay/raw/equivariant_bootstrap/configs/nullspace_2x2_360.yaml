@@ -1,0 +1,201 @@
+# THE NULL-SPACE PROBE: can we build a setting where the parametric bootstrap
+# actually fails, and the group action repairs it?
+#
+# WHY THIS EXISTS
+# ---------------
+# Every result so far is scored on W(c), the *calibrated* width -- which assumes
+# RCPS transfers from the calibration set to the data. That is a real
+# assumption and we cannot test it, so the primary readout moves to RAW,
+# pre-calibration coverage (`calibration: null`, already the setting every 360^2
+# campaign used; the number lives in `coverage_curve/empirical_pre` of every row
+# ever written).
+#
+# Read against raw coverage, the existing campaigns say the parametric arm
+# under-covers nearly everywhere -- at nominal 0.9 it reaches 0.666 (unrolled
+# 64^2), 0.767 (unrolled 360^2), 0.579 (unrolled 360^2 unweighted), 0.773
+# (wavpgd 64^2). The ONE exception is `wavpgd/360`, at 0.917. That is the cell
+# this probe is built to break, because it is the cleanest possible target: if
+# the setting change breaks the arm that currently works, the mechanism is the
+# setting and not the reconstructor.
+#
+# WHY THE CURRENT SETTING IS TOO EASY
+# -----------------------------------
+# Not because the null space is small -- it is 96 % of the Fourier cells at
+# 360^2. Because it is nearly EMPTY OF SIGNAL. MeerKAT puts 48 of 64 dishes
+# inside a 1 km core, so 36.3 % of its visibilities land at r < 0.05*pi, and the
+# TNG50 galaxies are smooth enough that 98.4 % of their energy falls in the
+# 3.95 % of cells it samples. The operator destroys almost nothing, so a
+# noise-only bootstrap has almost nothing to miss.
+#
+# THE 2x2, AS SETTLED (D56)
+# ------------------------
+#                        ISNR 20 dB            ISNR 35 dB
+#   MeerKAT 1h/300s      wavpgd      (ctrl)    wavpgd_isnr35
+#   VLA-B   4h/208s      wavpgd_vlab4h         wavpgd_vlab4h_isnr35
+#
+# The design took four rounds of measurement to reach; the discarded versions
+# are in the changelog (O8, M55-M58) and the short version is:
+#
+#   * the first VLA bank observed at 11-26 degrees elevation because MeerKAT's
+#     declination range was copied to a site 64 degrees away in latitude, which
+#     crushed the uv ellipse to a line (O8). The banks now match ELEVATION, not
+#     pointing, since two sites cannot have both.
+#   * a 1 h VLA track is not a hard problem, it is a broken one: the spiral
+#     morphology is gone at 18.5 dB. Earth rotation is the only lever that adds
+#     real uv coverage -- finer cadence just adds redundant samples (M54) -- so
+#     the track runs 4 h at a cadence that holds M at MeerKAT's 24 192 (M56).
+#   * every cell is tuned at its OWN c. The optimal weight scales as
+#     lambda ~ sigma^p with p >= 1.35 for MeerKAT and 0.39 for VLA-4h, so one
+#     constant cannot serve both; rendered at MeerKAT's 0.088 the VLA cells
+#     show a NEGATIVE ISNR gain, which is an under-regularised solver rather
+#     than a property of the array (M55, M58, D55).
+#
+# WHAT THE FOUR CELLS BUY. sigma/|residual| -- the fraction of its own error a
+# parametric bootstrap can see -- measured from the ISNR pairs at each cell's
+# own optimum:
+#
+#   meerkat 20 dB   0.909        vla-b 4h 20 dB   0.181
+#   meerkat 35 dB   0.361        vla-b 4h 35 dB   0.033
+#
+# A 28x ladder, monotone. And the two arrays reach reconstruction quality
+# within a few dB of each other (34.26 against 23.62 dB, from 98 % against 24 %
+# of the image energy), so the cells differ in what the error is MADE OF rather
+# than in how much of it there is. That is what makes this a controlled
+# comparison instead of "the hard one is worse at everything".
+#
+# `wavpgd/360` stays at c = 0.088 rather than its own optimum 0.16. That costs
+# 0.46 dB and moves sigma/|res| from 0.923 to 0.909 -- nothing -- and it keeps
+# the cell identical to the already-run `wavpgd_360` campaign, which is the
+# thread that verified the rebuilt image directory (M53). Do not "fix" it.
+#
+# THE ARMS, AND WHY SHELVES RATHER THAN ALLc
+# ------------------------------------------
+# The question here is not "which family wins" but "how much inflation does it
+# take to reach nominal, and does the group action supply it". That wants a
+# monotone one-parameter ladder, so the arms are the spectral shelves at p=1.0
+# (they always fire, so the realized kappa is not a firing-rate lottery) rather
+# than the ALLc composites at p=0.5. Read the raw coverage at 0.9 off the
+# ladder and interpolate the kappa that lands on nominal: at 64^2 the unrolled
+# net needed kappa ~ 1.48, the 360^2 unweighted net ~ 1.30, the 360^2 weighted
+# net ~ 1.21. The prediction here is that both knobs push that number UP.
+#
+# `P0_parametric` and `G_geometric` are shared verbatim with
+# `wavpgd_360.yaml`, so the MeerKAT/20 dB cell is a RERUN of rows that already
+# exist in `outputs/uq_campaign/wavpgd_360/`. That is deliberate and is the
+# first thing to read: `data/images/` was rebuilt on 2026-10-19 after the `uem`
+# project was erased, and if the restored test-split symlinks differ in any way
+# from the originals, these three P0 rows will NOT reproduce
+# `wavpgd_360/wavpgd/P0_parametric_seed{1,2,3}.json`. Check that before
+# believing anything else in this campaign.
+#
+# STAGED. Stage 1 is P0 only -- 4 cells x 3 seeds = 12 rows -- and gates the
+# rest: if the parametric arm does not break, there is nothing for the group
+# action to repair and stage 2 is not worth running. Stage 2 adds the five
+# remaining arms. See `nullspace_2x2_array.sh`.
+#
+# 6 arms x 4 cells x 3 seeds = 72 rows in full.
+
+img_size: 360
+families: [wavpgd, wavpgd_isnr35, wavpgd_vlab4h, wavpgd_vlab4h_isnr35]
+
+# ONE SEED, on purpose, and this is a gate rather than the final run.
+#
+# The seed sets the noise realisation and the transform draws; each row is
+# already an average over 100 images x 128 draws, so the seed-to-seed spread of
+# the raw coverage at 0.9 is tiny against the effects being measured:
+#
+#   campaign                    seed sd   arm range   ratio
+#   wavpgd_360                   0.0009      0.0114     12x
+#   campaign_360_unweighted      0.0067      0.3653     54x
+#   coverage_64_gpu_v2           0.0034      0.2989     88x
+#
+# Even in the tightest campaign one seed resolves the arm ordering 12x over. And
+# stage 1 compares P0 ACROSS cells, where the predicted separation is far larger
+# still (sigma/|res| 0.92 -> 0.07, M53). Three seeds would buy a factor sqrt(3)
+# on an error bar that is already 12-88x smaller than the signal, for 3x the
+# H100 hours.
+#
+# RESTORE [1, 2, 3] for the final run that goes in the paper -- the error bar is
+# then reported rather than assumed, and the cost is justified once the result
+# is known to be worth reporting.
+seeds: [1]
+out_dir: outputs/nullspace_2x2_360
+
+defaults:
+  MC: 128
+  n_calib: 0
+  n_test: 100
+  # 50 divides n_test evenly; sized in M41 for the wavelet Dykstra loop, which
+  # holds (8, B, H, W) twice (207 MB here) plus a 4 MB PSF kernel per image.
+  # Identical to `wavpgd_360.yaml` so the control cell is a true rerun.
+  batch_size: 50
+  super_resolution: 1.5
+  levels: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
+  primary_level: 0.9
+  num_alphas: 100
+  tarp_bins: 100
+  # Measured 2026-10-20 (M53) at c = 0.088 on these exact 100 images:
+  #   wavpgd            33.80 dB   (campaign rows recorded 33.70 -> reproduces)
+  #   wavpgd_isnr35     41.24 dB
+  #   wavpgd_vlab       25.35 dB
+  #   wavpgd_vlab_isnr35 25.89 dB
+  # all now in runs.yaml as `psnr_reference`. 3 dB is a WIRING check, not a
+  # tuning check: the per-image spread is 3.4-6.3 dB, so at n = 100 the SE is
+  # 0.3-0.6 dB and 3 dB catches a mis-wired uv / op_norm / psf_fft while
+  # tolerating image-sampling drift.
+  psnr_tolerance_db: 3.0
+  calibration: null
+
+# Cycles per image, validated against the band limit implied by
+# super_resolution: 120 = 360 / 2 / 1.5. Same values as `campaign_360.yaml`
+# and `wavpgd_360.yaml`, so the ladder is comparable across campaigns.
+_hp: &hp [6.36, 14.40]
+_lp: &lp [14.40, 58.05]
+
+_rot90: &rot90 {name: rot90, p: 0.5}
+_reflect: &reflect {name: reflect, p: 0.5}
+_shift: &shift {name: shift, p: 0.5, max_pixels: 2}
+
+arms:
+  # Stage 1 -- the gate. No group action: the pure noise bootstrap.
+  P0_parametric: []
+
+  # The exact-permutation subgroup. Costs no kappa, so whatever it buys is
+  # free, and it is the control for "does any group action help" separate from
+  # "does spectral reweighting help".
+  G_geometric:
+    - *rot90
+    - *reflect
+    - *shift
+
+  GS_shelves_1.10:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.10, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.10, sigma_rel: 0.5}}
+
+  GS_shelves_1.25:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.25, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.25, sigma_rel: 0.5}}
+
+  GS_shelves_1.50:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 1.50, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 1.50, sigma_rel: 0.5}}
+
+  # The top of the ladder. At 64^2 this OVER-covered (0.965 against 0.9), which
+  # is what brackets the optimum from above. If every cell here still
+  # under-covers at 2.00, the ladder is too short -- extend it, do not conclude
+  # that the group action cannot reach nominal.
+  GS_shelves_2.00:
+    - *rot90
+    - *reflect
+    - *shift
+    - {name: highpass, p: 1.0, cutoff_range: *hp, kappa: {mean: 2.00, sigma_rel: 0.5}}
+    - {name: lowpass, p: 1.0, cutoff_range: *lp, kappa: {mean: 2.00, sigma_rel: 0.5}}
